@@ -1,0 +1,17 @@
+pytorch_lightning
+torchvision
+opencv-python
+albumentations
+fsspec[s3]
+pytesseract
+Levenshtein
+jellyfish
+regex
+camelot-py[cv] 
+tabula-py
+pymupdf
+frontend
+tensorboard
+mlflow
+nltk
+unidecode

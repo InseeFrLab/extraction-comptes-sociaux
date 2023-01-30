@@ -1,0 +1,4 @@
+data_path: ssplab/comptes-sociaux/Marmot_data
+table_mask_path: ssplab/comptes-sociaux/table_mask
+column_mask_path: ssplab/comptes-sociaux/column_mask
+torch_home: ssplab/comptes-sociaux/weights

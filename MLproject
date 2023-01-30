@@ -1,0 +1,16 @@
+name: extraction-comptes-sociaux
+
+entry_points:
+  page_selection:
+    parameters:
+      remote_server_uri: {type: str, default: https://mlflow.lab.sspcloud.fr}
+      experiment_name: {type: str, default: page_selection}
+      run_name: {type: str, default: default}
+    command: "python3 -m src.page_selection.train_random_forest {remote_server_uri} {experiment_name} {run_name}"
+  extraction:
+    parameters:
+      remote_server_uri: {type: str, default: https://mlflow.lab.sspcloud.fr}
+      experiment_name: {type: str, default: extraction}
+      run_name: {type: str, default: default}
+      config_path: {type: str, default: config/tablenet_config/tablenet_config.yaml}
+    command: "python3 -m src.extraction.train {remote_server_uri} {experiment_name} {run_name} {config_path}"

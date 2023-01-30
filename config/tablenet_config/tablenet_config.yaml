@@ -1,0 +1,16 @@
+gpus: 1
+s3: True
+batch_size: 2
+max_epochs: 2
+num_sanity_val_steps: 0
+patience: 3
+batch_norm: False
+fp_data: True
+
+optimizer_params:
+  optimizer: Adam
+  lr: 0.001
+
+scheduler_params:
+  scheduler: ReduceLROnPlateau
+  interval: epoch
