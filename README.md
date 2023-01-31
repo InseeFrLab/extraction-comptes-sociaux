@@ -1,22 +1,19 @@
-# Description du projet
+# Extraction d'information des comptes sociaux
 
-Ce projet a pour but d'extraire des informations de tableaux se situant sur des images scannées de comptes sociaux d'entreprise.
+Ce projet a pour but d'extraire l'information contenue dans le tableau *filiales et participations* qui se situe dans les comptes sociaux des entreprises.
+
+Il est constitué du package `page_selection` qui implémente les fonctionnalités permettant de sélectionner la page du document des comptes sociaux qui contient le tableau des filiales et participations et du package `extraction` qui implémente les fonctionnalités permettant d'extraction du tableau.
 
 ## Mise en route
 
-Pour mettre en place l'environnement nécessaire au lancement du code, lancer à la racine du projet la commande
-```./setup.sh```
+Pour mettre en place l'environnement nécessaire au lancement du code (dans un service du SSP Cloud par exemple), lancer à la racine du projet la commande `./setup.sh`.
 
-L'entraînement du modèle de segmentation qui retourne pour une image donnée en entrée un masque donnant la position des tableaux sur cette image et un autre masque donnant la position des colonnes se lance ensuite avec la commande
-```python train.py```
-avec les options suivantes :
-- `--gpus` indique le nombre de GPUs utilisés pour l'entraînement. Par défaut égal à 1, si fixé à 0 l'entraînement se fera sans GPU. Pour le moment seuls 0 et 1 sont supportés ;
-- `--s3` indique si les logs doivent être sauvegardés sur MinIO ou localement, par défaut ils sont sauvegardés localement ;
-- `--lr` indique la learning rate initiale pour l'entraînement. Sa valeur par défaut est 0.001. 
+Pour l'interaction avec `https://minio.lab.sspcloud.fr`, il est recommandé utiliser les credentials qui figurent comme secrets `Vault` au sein du projet `projet-extraction-tableaux` du SSP Cloud (la commande `unset AWS_SESSION_TOKEN` est conseillée pour éviter des problèmes liés à l'existence de cette variable d'environnement).
 
-## Utilisation de Tensorboard pour visualiser les logs
+## Sélection de page
 
-Pour utiliser Tensorboard on peut utiliser le service Tensorflow du DataLab (dans la configuration du service il faut activer Tensorboard dans l'onglet Service).
+Le script pour entraîner le modèle de Random Forest qui sert à faire la sélection de page est `train_random_forest.py`. Il se lance avec la commande `./bash/mlflow-run-rf.sh`.
 
-On peut ensuite lancer Tensorboard avec la commande
-```AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY AWS_REGION=us-east-1 S3_ENDPOINT=$AWS_S3_ENDPOINT S3_USE_HTTPS=0 S3_VERIFY_SSL=0 tensorboard --logdir s3://projet-ssplab/comptes-sociaux/logs --host 0.0.0.0```
+## Extraction
+
+L'entraînement du modèle de segmentation qui retourne pour une image donnée en entrée un masque donnant la position des tableaux sur cette image et un autre masque donnant la position des colonnes figure dans le script `train.py`, et se lance avec la commande `./bash/mlflow-run-tablenet.sh`. Les fichiers de configuration pour l'entraînement se trouvent dans le répertoire `config/` à la racine du projet.
