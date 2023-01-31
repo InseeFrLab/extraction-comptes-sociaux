@@ -26,7 +26,6 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
     with open(get_root_path() / config_path, "r") as stream:
         config = yaml.safe_load(stream)
     gpus = config["gpus"]
-    s3 = config["s3"]
     batch_size = config["batch_size"]
     max_epochs = config["max_epochs"]
     num_sanity_val_steps = config["num_sanity_val_steps"]
@@ -42,6 +41,7 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
     scheduler = scheduler_params.pop("scheduler")
     scheduler_interval = scheduler_params.pop("interval")
     scheduler = schedulers[scheduler]
+    strategy = "ddp" if gpus > 1 else None
 
     torch.cuda.empty_cache()
     gc.collect()
@@ -75,6 +75,7 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
     )
 
     # Data for the training pipeline
+    # Clean up this code
     data_dir = "./data/marmot_data"
     siren_test = [
         "305756413",
@@ -105,7 +106,7 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
         )
         if path not in test_data
     ]
-    
+
     if not fp_data:
         train_data = [path for path in train_data if len(path.name) > 13]
 
@@ -145,6 +146,7 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
             max_epochs=max_epochs,
             gpus=gpus,
             num_sanity_val_steps=num_sanity_val_steps,
+            strategy=strategy
         )
         trainer.fit(model, datamodule=data_module)
         trainer.test(datamodule=data_module)
