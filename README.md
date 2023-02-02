@@ -17,3 +17,7 @@ Le script pour entraîner le modèle de Random Forest qui sert à faire la séle
 ## Extraction
 
 L'entraînement du modèle de segmentation qui retourne pour une image donnée en entrée un masque donnant la position des tableaux sur cette image et un autre masque donnant la position des colonnes figure dans le script `train.py`, et se lance avec la commande `./bash/mlflow-run-tablenet.sh`. Les fichiers de configuration pour l'entraînement se trouvent dans le répertoire `config/` à la racine du projet.
+
+### Contributeurs
+
+Ce dépôt a été initialisé grâce au travail de Laura Gaimard et Adem Khamallah (INSEE).
