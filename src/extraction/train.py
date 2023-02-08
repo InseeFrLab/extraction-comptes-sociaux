@@ -6,7 +6,6 @@ import albumentations as album
 from pathlib import Path
 import torch
 import gc
-import mlflow
 import pytorch_lightning as pl
 from albumentations.pytorch.transforms import ToTensorV2
 from pytorch_lightning.callbacks import (
@@ -21,7 +20,7 @@ from .optimizers import optimizers
 from .schedulers import schedulers
 
 
-def main(remote_server_uri, experiment_name, run_name, config_path):
+def main(config_path):
     # Parameters
     with open(get_root_path() / config_path, "r") as stream:
         config = yaml.safe_load(stream)
@@ -137,20 +136,15 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
     )
     lr_monitor = LearningRateMonitor(logging_interval="step")
 
-    mlflow.set_tracking_uri(remote_server_uri)
-    mlflow.set_experiment(experiment_name)
-    mlflow.pytorch.autolog(registered_model_name="extraction")
-    with mlflow.start_run(run_name=run_name):
-        trainer = pl.Trainer(
+    trainer = pl.Trainer(
             callbacks=[lr_monitor, checkpoint_callback, early_stop_callback],
             max_epochs=max_epochs,
             gpus=gpus,
             num_sanity_val_steps=num_sanity_val_steps,
             strategy=strategy
         )
-        trainer.fit(model, datamodule=data_module)
-        trainer.test(datamodule=data_module)
-
+    trainer.fit(model, datamodule=data_module)
+    trainer.test(datamodule=data_module)
 
 if __name__ == "__main__":
     # MLFlow params
