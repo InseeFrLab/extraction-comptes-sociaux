@@ -14,10 +14,10 @@ from pytorch_lightning.callbacks import (
     LearningRateMonitor,
 )
 
-from .tablenet import MarmotDataModule, TableNetModule
-from .utils import get_root_path
-from .optimizers import optimizers
-from .schedulers import schedulers
+from tablenet import MarmotDataModule, TableNetModule
+from utils import get_root_path
+from optimizers import optimizers
+from schedulers import schedulers
 
 
 def main(config_path):
@@ -41,7 +41,7 @@ def main(config_path):
     scheduler_interval = scheduler_params.pop("interval")
     scheduler = schedulers[scheduler]
     strategy = "ddp" if gpus > 1 else None
-
+    print(f'---------------------------------{optimizer_params}')
     torch.cuda.empty_cache()
     gc.collect()
 
@@ -75,7 +75,8 @@ def main(config_path):
 
     # Data for the training pipeline
     # Clean up this code
-    data_dir = "./data/marmot_data"
+    
+    data_dir = "extraction-comptes-sociaux/data/marmot_data"
     siren_test = [
         "305756413",
         "324084698",
@@ -105,7 +106,7 @@ def main(config_path):
         )
         if path not in test_data
     ]
-
+    
     if not fp_data:
         train_data = [path for path in train_data if len(path.name) > 13]
 
@@ -143,14 +144,12 @@ def main(config_path):
             num_sanity_val_steps=num_sanity_val_steps,
             strategy=strategy
         )
+    print(f' ------------------------------------------------------------------------------------- {data_module.data}------------------------------------------------------------------')
     trainer.fit(model, datamodule=data_module)
     trainer.test(datamodule=data_module)
 
 if __name__ == "__main__":
-    # MLFlow params
-    remote_server_uri = sys.argv[1]
-    experiment_name = sys.argv[2]
-    run_name = sys.argv[3]
-    config_path = sys.argv[4]
+    # MLFlow param
+    config_path = "config/tablenet_config/tablenet_config_cycle.yaml"
 
-    main(remote_server_uri, experiment_name, run_name, config_path)
+    main(config_path)

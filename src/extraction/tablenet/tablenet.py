@@ -1,7 +1,6 @@
 """TableNet Module."""
 from typing import Dict, Union
 import os
-import mlflow
 import pytorch_lightning as pl
 import torch
 from torch import optim
@@ -197,25 +196,24 @@ class TableNetModule(pl.LightningModule):
             image = Image.fromarray(255 * labels_table[i].squeeze().cpu().numpy().astype(np.uint8))
             file_name = f"table_label_{i}.png"
             image.save(file_name)
-            mlflow.log_artifact(file_name, artifact_path="images")
+            
             os.remove(file_name)
 
             image = Image.fromarray(255 * labels_column[i].squeeze().cpu().numpy().astype(np.uint8))
             file_name = f"column_label_{i}.png"
             image.save(file_name)
-            mlflow.log_artifact(file_name, artifact_path="images")
+            
             os.remove(file_name)
 
             image = Image.fromarray(255 * output_table[i].squeeze().cpu().numpy().astype(np.uint8))
             file_name = f"table_output_{i}.png"
             image.save(file_name)
-            mlflow.log_artifact(file_name, artifact_path="images")
             os.remove(file_name)
 
             image = Image.fromarray(255 * output_column[i].squeeze().cpu().numpy().astype(np.uint8))
             file_name = f"column_output_{i}.png"
             image.save(file_name)
-            mlflow.log_artifact(file_name, artifact_path="images")
+            
             os.remove(file_name)
 
 
