@@ -1,0 +1,12 @@
+batch_norm: false
+num_class: 1
+optimizer: !!python/name:torch.optim.adam.Adam ''
+optimizer_params:
+  lr: 0.001
+scheduler: !!python/name:torch.optim.lr_scheduler.OneCycleLR ''
+scheduler_interval: step
+scheduler_params:
+  epochs: 500
+  max_lr: 0.0001
+  pct_start: 0.1
+  steps_per_epoch: 204

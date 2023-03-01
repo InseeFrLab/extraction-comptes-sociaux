@@ -76,7 +76,7 @@ def main(config_path):
     # Data for the training pipeline
     # Clean up this code
     
-    data_dir = "extraction-comptes-sociaux/data/marmot_data"
+    data_dir = "../../data/marmot_data"
     siren_test = [
         "305756413",
         "324084698",
