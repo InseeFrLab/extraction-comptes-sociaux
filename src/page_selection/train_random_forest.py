@@ -15,8 +15,12 @@ from .utils import (
     extract_document_content,
     fit_transform_vectorizer,
     train_random_forest,
+    load_labeled_data,
+    load_extra_labeled_data,
 )
 from .model_wrapper import RandomForestWrapper
+from matplotlib import pyplot as plt
+import seaborn as sns
 
 
 def main(remote_server_uri: str, experiment_name: str, run_name: str):
@@ -28,44 +32,16 @@ def main(remote_server_uri: str, experiment_name: str, run_name: str):
         experiment_name (str): MLFlow experiment name.
         run_name (str): MLFlow run name.
     """
-    # TODO: clean up
-    with open("data/updated_labels_filtered.json", "r") as fp:
-        labels = json.load(fp)
+    flat_corpus, valid_labels = load_labeled_data()
+    flat_corpus_extra, valid_labels_extra = load_extra_labeled_data()
+    flat_corpus += flat_corpus_extra
+    valid_labels += valid_labels
 
-    labeled_file_names = []
-    valid_labels = []
-
-    i = 0
-    for file_name, file_labels in labels.items():
-        # Keep documents with at least 1 table
-        table_count = sum(file_labels)
-        if table_count > 0:
-            i += 1
-            labeled_file_names.append(file_name)
-            for label in file_labels:
-                valid_labels.append(label)
-            if i > 2:
-                break
-
-    corpus = []
-    labeled_file_names = [
-        "projet-extraction-tableaux/raw-comptes/CS_extrait/" + file_name
-        for file_name in labeled_file_names
-    ]
-    for file_name in tqdm(labeled_file_names):
-        clean_document_content = []
-        page_list = extract_document_content(file_name, resolution=50)
-        for page in page_list:
-            clean_content = clean_page_content(page)
-            clean_document_content.append(clean_content)
-        corpus.append(clean_document_content)
-
-    flat_corpus = [item for sublist in corpus for item in sublist]
-    vectorizer, vectorized_corpus = fit_transform_vectorizer(flat_corpus)
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        vectorized_corpus, valid_labels, test_size=0.2, random_state=42
+    train_corpus, test_corpus, y_train, y_test = train_test_split(
+        flat_corpus, valid_labels, test_size=0.2, random_state=42
     )
+
+    vectorizer, X_train = fit_transform_vectorizer(train_corpus)
 
     # Training classifier
     params = {
@@ -99,24 +75,44 @@ def main(remote_server_uri: str, experiment_name: str, run_name: str):
             code_path=["src/page_selection/"],
             python_model=RandomForestWrapper(),
             artifacts=artifacts,
-            registered_model_name="page_selection"
+            registered_model_name="page_selection",
         )
 
         os.remove("pickled_model.pkl")
         os.remove("tokenizer.pkl")
 
         # Test time
+        X_test = vectorizer.transform(test_corpus)
         t0 = time()
         pred = clf.predict(X_test)
         test_time = time() - t0
-        # Score
-        score = metrics.accuracy_score(y_test, pred)
+        # Performance metrics
+        accuracy = metrics.accuracy_score(y_test, pred)
+        f1 = metrics.f1_score(y_test, pred)
+        precision = metrics.precision_score(y_test, pred)
+        recall = metrics.recall_score(y_test, pred)
+        cm = metrics.confusion_matrix(y_test, pred)
 
         for param, value in params.items():
             mlflow.log_param(param, value)
         mlflow.log_param("model_type", clf_descr)
 
-        mlflow.log_metric("score_test", score)
+        mlflow.log_metric("acc_test", accuracy)
+        mlflow.log_metric("f1_test", f1)
+        mlflow.log_metric("precision_test", precision)
+        mlflow.log_metric("recall_test", recall)
+
+        # Log confusion matrix
+        ax = plt.subplot()
+        plot = sns.heatmap(cm, annot=True, fmt="g", ax=ax)
+
+        # labels, title and ticks
+        ax.set_xlabel("Predicted labels")
+        ax.set_ylabel("True labels")
+        ax.set_title("Confusion Matrix")
+        mlflow.log_figure(plot.get_figure(), "cm.png")
+
+        # Log train and test times
         mlflow.log_metric("train_time", train_time)
         mlflow.log_metric("test_time", test_time)
 
