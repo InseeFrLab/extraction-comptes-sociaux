@@ -11,7 +11,6 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://git.lab.sspcloud.fr/ssplab/comptes-sociaux-to-tableau-fp-csv",
-
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
@@ -24,21 +23,21 @@ setuptools.setup(
         "requests",
         "s3fs",
         "matplotlib",
-        "torchvision",
-        "albumentations",
+        "pytorch_lightning==2.0.0",
+        "torchvision==0.15.1",
+        "albumentations==1.3.0",
         "pytesseract",
-        "pytorch_lightning",
         "mlflow",
         "nltk",
         "Pillow",
         "pymupdf",
-        "unidecode"
+        "unidecode",
     ],
     packages=[
         "src.page_selection",
         "src.extraction",
         "src.extraction.data",
-        "src.extraction.tablenet"
+        "src.extraction.tablenet",
     ],
     python_requires=">=3.7",
     package_data={"extraction_core_comptes": ["data/*"]},

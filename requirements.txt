@@ -1,7 +1,7 @@
-pytorch_lightning
-torchvision
-opencv-python
-albumentations
+pytorch_lightning==2.0.0
+torchvision==0.15.1
+albumentations==1.3.0
+opencv-python==4.7.0.72
 fsspec[s3]
 pytesseract
 Levenshtein
@@ -11,7 +11,6 @@ camelot-py[cv]
 tabula-py
 pymupdf
 frontend
-tensorboard
 mlflow
 nltk
 unidecode

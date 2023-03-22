@@ -9,7 +9,7 @@ import numpy as np
 from PIL import Image
 from torch import nn, optim
 from torch.nn import functional as F
-from torchvision.models import vgg19, vgg19_bn
+from torchvision.models import vgg19, vgg19_bn, VGG19_Weights, VGG19_BN_Weights
 
 EPSILON = 1e-15
 
@@ -23,11 +23,13 @@ class TableNetModule(pl.LightningModule):
         self,
         optimizer: Union[optim.SGD, optim.Adam],
         optimizer_params: Dict,
-        scheduler: Union[optim.lr_scheduler.OneCycleLR, optim.lr_scheduler.ReduceLROnPlateau],
+        scheduler: Union[
+            optim.lr_scheduler.OneCycleLR, optim.lr_scheduler.ReduceLROnPlateau
+        ],
         scheduler_params: Dict,
         scheduler_interval: str,
         num_class: int = 1,
-        batch_norm: bool = False
+        batch_norm: bool = False,
     ):
         """
         Initialize TableNet Module.
@@ -169,7 +171,7 @@ class TableNetModule(pl.LightningModule):
         scheduler = {
             "scheduler": scheduler,
             "monitor": "validation_loss",
-            "interval": self.scheduler_interval
+            "interval": self.scheduler_interval,
         }
 
         return [optimizer], [scheduler]
@@ -180,7 +182,7 @@ class TableNetModule(pl.LightningModule):
         labels_table: torch.Tensor,
         labels_column: torch.Tensor,
         output_table: torch.Tensor,
-        output_column: torch.Tensor
+        output_column: torch.Tensor,
     ):
         """
         Log images on to logger.
@@ -194,25 +196,33 @@ class TableNetModule(pl.LightningModule):
         """
         # TODO: clean up
         for i in range(min(len(labels_table), n_images)):
-            image = Image.fromarray(255 * labels_table[i].squeeze().cpu().numpy().astype(np.uint8))
+            image = Image.fromarray(
+                255 * labels_table[i].squeeze().cpu().numpy().astype(np.uint8)
+            )
             file_name = f"table_label_{i}.png"
             image.save(file_name)
             mlflow.log_artifact(file_name, artifact_path="images")
             os.remove(file_name)
 
-            image = Image.fromarray(255 * labels_column[i].squeeze().cpu().numpy().astype(np.uint8))
+            image = Image.fromarray(
+                255 * labels_column[i].squeeze().cpu().numpy().astype(np.uint8)
+            )
             file_name = f"column_label_{i}.png"
             image.save(file_name)
             mlflow.log_artifact(file_name, artifact_path="images")
             os.remove(file_name)
 
-            image = Image.fromarray(255 * output_table[i].squeeze().cpu().numpy().astype(np.uint8))
+            image = Image.fromarray(
+                255 * output_table[i].squeeze().cpu().numpy().astype(np.uint8)
+            )
             file_name = f"table_output_{i}.png"
             image.save(file_name)
             mlflow.log_artifact(file_name, artifact_path="images")
             os.remove(file_name)
 
-            image = Image.fromarray(255 * output_column[i].squeeze().cpu().numpy().astype(np.uint8))
+            image = Image.fromarray(
+                255 * output_column[i].squeeze().cpu().numpy().astype(np.uint8)
+            )
             file_name = f"column_output_{i}.png"
             image.save(file_name)
             mlflow.log_artifact(file_name, artifact_path="images")
@@ -235,9 +245,9 @@ class TableNet(nn.Module):
         super().__init__()
 
         self.vgg = (
-            vgg19(pretrained=True).features
+            vgg19(weights=VGG19_Weights.DEFAULT).features
             if not batch_norm
-            else vgg19_bn(pretrained=True).features
+            else vgg19_bn(weights=VGG19_BN_Weights.DEFAULT).features
         )
         for param in self.vgg.parameters():
             param.requires_grad = False

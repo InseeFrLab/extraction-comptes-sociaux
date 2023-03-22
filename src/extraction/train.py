@@ -1,7 +1,6 @@
 """Module d'apprentissage"""
 import yaml
 import sys
-import os
 import albumentations as album
 from pathlib import Path
 import torch
@@ -25,7 +24,6 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
     # Parameters
     with open(get_root_path() / config_path, "r") as stream:
         config = yaml.safe_load(stream)
-    gpus = config["gpus"]
     batch_size = config["batch_size"]
     max_epochs = config["max_epochs"]
     num_sanity_val_steps = config["num_sanity_val_steps"]
@@ -41,15 +39,9 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
     scheduler = scheduler_params.pop("scheduler")
     scheduler_interval = scheduler_params.pop("interval")
     scheduler = schedulers[scheduler]
-    strategy = "ddp" if gpus > 1 else None
 
     torch.cuda.empty_cache()
     gc.collect()
-
-    # Choix du nombre de coeur du CPU pour l'entrainement
-    if gpus == 0:
-        cores = os.cpu_count()
-        torch.set_num_threads(cores)
 
     image_size = (896, 896)
     transforms_augmentation = album.Compose([])
@@ -126,7 +118,7 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
         optimizer_params=optimizer_params,
         scheduler=scheduler,
         scheduler_params=scheduler_params,
-        scheduler_interval=scheduler_interval
+        scheduler_interval=scheduler_interval,
     )
 
     checkpoint_callback = ModelCheckpoint(
@@ -142,11 +134,11 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
     mlflow.pytorch.autolog(registered_model_name="extraction")
     with mlflow.start_run(run_name=run_name):
         trainer = pl.Trainer(
+            accelerator="auto",
+            strategy="auto",
             callbacks=[lr_monitor, checkpoint_callback, early_stop_callback],
             max_epochs=max_epochs,
-            gpus=gpus,
             num_sanity_val_steps=num_sanity_val_steps,
-            strategy=strategy
         )
         trainer.fit(model, datamodule=data_module)
         trainer.test(datamodule=data_module)

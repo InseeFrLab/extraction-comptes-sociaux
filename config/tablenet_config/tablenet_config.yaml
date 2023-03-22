@@ -1,7 +1,6 @@
-gpus: 1
 s3: True
 batch_size: 4
-max_epochs: 50
+max_epochs: 2
 num_sanity_val_steps: 0
 patience: 3
 batch_norm: False
