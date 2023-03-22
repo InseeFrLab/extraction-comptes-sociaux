@@ -307,7 +307,6 @@ def train_random_forest(
 
 def load_extra_labeled_data():
     """ """
-
     with fs.open(
         "s3://projet-extraction-tableaux/data/df_trainrf.pickle", "rb"
     ) as f:
