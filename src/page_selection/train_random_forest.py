@@ -17,10 +17,13 @@ from .utils import (
     train_random_forest,
     load_labeled_data,
     load_extra_labeled_data,
+    get_numeric_char_rate,
 )
 from .model_wrapper import RandomForestWrapper
 from matplotlib import pyplot as plt
 import seaborn as sns
+import numpy as np
+from scipy import sparse
 
 
 def main(remote_server_uri: str, experiment_name: str, run_name: str):
@@ -35,13 +38,26 @@ def main(remote_server_uri: str, experiment_name: str, run_name: str):
     flat_corpus, valid_labels = load_labeled_data()
     flat_corpus_extra, valid_labels_extra = load_extra_labeled_data()
     flat_corpus += flat_corpus_extra
-    valid_labels += valid_labels
+    valid_labels += valid_labels_extra
 
+    # Add new feature : rate of numeric characters
+    num_rates = [get_numeric_char_rate(content) for content in flat_corpus]
+
+    # Split
+    random_state = 42
+    test_size = 0.2
+    train_num_rates, test_num_rates = train_test_split(
+        num_rates, test_size=test_size, random_state=random_state
+    )
     train_corpus, test_corpus, y_train, y_test = train_test_split(
-        flat_corpus, valid_labels, test_size=0.2, random_state=42
+        flat_corpus,
+        valid_labels,
+        test_size=test_size,
+        random_state=random_state,
     )
 
     vectorizer, X_train = fit_transform_vectorizer(train_corpus)
+    X_train = sparse.hstack((X_train, np.array(train_num_rates)[:, None]))
 
     # Training classifier
     params = {
@@ -83,6 +99,8 @@ def main(remote_server_uri: str, experiment_name: str, run_name: str):
 
         # Test time
         X_test = vectorizer.transform(test_corpus)
+        X_test = sparse.hstack((X_test, np.array(test_num_rates)[:, None]))
+
         t0 = time()
         pred = clf.predict(X_test)
         test_time = time() - t0

@@ -9,6 +9,9 @@ import fitz
 import re
 import unidecode
 import pandas as pd
+import json
+import pickle
+from tqdm import tqdm
 from nltk.corpus import stopwords as ntlk_stopwords
 from nltk.stem.snowball import SnowballStemmer
 from PIL import Image
@@ -219,6 +222,7 @@ def train_random_forest(
 
 def load_extra_labeled_data():
     """ """
+
     with fs.open(
         "s3://projet-extraction-tableaux/data/df_trainrf.pickle", "rb"
     ) as f:
@@ -240,7 +244,7 @@ def load_labeled_data():
     with fs.open(
         "s3://projet-extraction-tableaux/updated_labels_filtered.json", "rb"
     ) as f:
-        labels = json.load(fp)
+        labels = json.load(f)
 
     labeled_file_names = []
     valid_labels = []
@@ -254,8 +258,6 @@ def load_labeled_data():
             labeled_file_names.append(file_name)
             for label in file_labels:
                 valid_labels.append(label)
-            if i > 2:
-                break
 
     corpus = []
     labeled_file_names = [
@@ -272,3 +274,18 @@ def load_labeled_data():
 
     flat_corpus = [item for sublist in corpus for item in sublist]
     return flat_corpus, valid_labels
+
+
+def get_numeric_char_rate(page_content: str):
+    """
+    Compute rate of numeric characters in `page_content`.
+
+    Args:
+        page_content (str): Page content.
+    """
+    try:
+        return float(len("".join(re.findall("\d", page_content)))) / float(
+            len(page_content)
+        )
+    except ZeroDivisionError:
+        return 0.0
