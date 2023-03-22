@@ -60,6 +60,7 @@ def main(remote_server_uri: str, experiment_name: str, run_name: str):
     X_train = sparse.hstack((X_train, np.array(train_num_rates)[:, None]))
 
     vectorizer, X_train = fit_transform_vectorizer(train_corpus)
+    X_train = sparse.hstack((X_train, np.array(train_num_rates)[:, None]))
 
     # Training classifier
     params = {
