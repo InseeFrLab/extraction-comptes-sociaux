@@ -9,6 +9,9 @@ import fitz
 import re
 import unidecode
 import pandas as pd
+import json
+import pickle
+from tqdm import tqdm
 from nltk.corpus import stopwords as ntlk_stopwords
 from nltk.stem.snowball import SnowballStemmer
 from PIL import Image
@@ -20,7 +23,7 @@ from pytesseract import image_to_data
 fs = s3fs.S3FileSystem(
     client_kwargs={"endpoint_url": "https://" + os.environ["AWS_S3_ENDPOINT"]},
     key=os.environ["AWS_ACCESS_KEY_ID"],
-    secret=os.environ["AWS_SECRET_ACCESS_KEY"]
+    secret=os.environ["AWS_SECRET_ACCESS_KEY"],
 )
 
 
@@ -215,3 +218,74 @@ def train_random_forest(
     # Classifier name
     clf_descr = clf.__class__.__name__
     return clf, clf_descr, train_time
+
+
+def load_extra_labeled_data():
+    """ """
+
+    with fs.open(
+        "s3://projet-extraction-tableaux/data/df_trainrf.pickle", "rb"
+    ) as f:
+        df = pickle.load(f)
+
+    flat_corpus = list(df.text)
+    flat_corpus = [clean_page_content(page) for page in flat_corpus]
+    valid_labels = list(df.tableau_f_et_p)
+
+    return flat_corpus, valid_labels
+
+
+def load_labeled_data():
+    """
+    Load data labeled manually on a selection of
+    pdf documents. Keep only those with at least
+    1 page with the relevant table.
+    """
+    with fs.open(
+        "s3://projet-extraction-tableaux/updated_labels_filtered.json", "rb"
+    ) as f:
+        labels = json.load(f)
+
+    labeled_file_names = []
+    valid_labels = []
+
+    i = 0
+    for file_name, file_labels in labels.items():
+        # Keep documents with at least 1 table
+        table_count = sum(file_labels)
+        if table_count > 0:
+            i += 1
+            labeled_file_names.append(file_name)
+            for label in file_labels:
+                valid_labels.append(label)
+
+    corpus = []
+    labeled_file_names = [
+        "projet-extraction-tableaux/raw-comptes/CS_extrait/" + file_name
+        for file_name in labeled_file_names
+    ]
+    for file_name in tqdm(labeled_file_names):
+        clean_document_content = []
+        page_list = extract_document_content(file_name, resolution=50)
+        for page in page_list:
+            clean_content = clean_page_content(page)
+            clean_document_content.append(clean_content)
+        corpus.append(clean_document_content)
+
+    flat_corpus = [item for sublist in corpus for item in sublist]
+    return flat_corpus, valid_labels
+
+
+def get_numeric_char_rate(page_content: str):
+    """
+    Compute rate of numeric characters in `page_content`.
+
+    Args:
+        page_content (str): Page content.
+    """
+    try:
+        return float(len("".join(re.findall("\d", page_content)))) / float(
+            len(page_content)
+        )
+    except ZeroDivisionError:
+        return 0.0
