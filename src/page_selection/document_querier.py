@@ -39,6 +39,12 @@ class DocumentQuerier:
         )
         return r.json()["token"]
 
+    def update_token(self):
+        """
+        Update token.
+        """
+        self.bearer_auth = BearerAuth(self.get_token())
+
     def query_document(
         self, siren: str, year: int, save_path: str, s3: bool = True
     ):
@@ -101,4 +107,5 @@ class DocumentQuerier:
             f"https://registre-national-entreprises.inpi.fr/api/companies/{siren}/attachments",
             auth=self.bearer_auth,
         )
+        print(r.status_code)
         return r.json()["bilans"]
