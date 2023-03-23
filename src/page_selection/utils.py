@@ -11,6 +11,7 @@ import unidecode
 import pandas as pd
 import json
 import pickle
+import threading
 from tqdm import tqdm
 from nltk.corpus import stopwords as ntlk_stopwords
 from nltk.stem.snowball import SnowballStemmer
@@ -89,7 +90,7 @@ def extract_document_content_fitz(doc: fitz.Document) -> List[pd.DataFrame]:
 
 def extract_document_content_ocr(
     doc: fitz.Document, resolution: int = 200
-) -> List[pd.DataFrame]:
+) -> List[str]:
     """
     From a fitz.Document object, extract content as a list of
     strings each containing the text in a page using Tesseract OCR.
@@ -98,22 +99,55 @@ def extract_document_content_ocr(
         doc (fitz.Document): PDF document.
         resolution (int): Resolution.
     """
-    page_list = []
+    # List of threads
+    threads = []
+    page_dict = {}
 
-    for page in doc:
-        pix = page.get_pixmap(dpi=resolution)
-        mode = "RGBA" if pix.alpha else "RGB"
-        image = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
-        ocr = image_to_data(
-            image, lang="fra", config="--psm 1", output_type="data.frame"
+    for page_number, page in enumerate(doc):
+        threads.append(
+            threading.Thread(
+                group=None,
+                target=ocr_page_to_dict,
+                args=(page_number, page, page_dict, resolution),
+            )
         )
-        cleaned_ocr = ocr["text"].dropna()
-        if cleaned_ocr.empty:
-            page_list.append("vide")
-        else:
-            page_list.append(cleaned_ocr.str.cat(sep=" "))
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    # Transform output dict
+    page_list = []
+    for key, value in sorted(page_dict.items()):
+        page_list.append(value)
 
     return page_list
+
+
+def ocr_page_to_dict(
+    page_number: int, page: fitz.Page, page_dict: Dict, resolution: int = 200
+):
+    """
+    OCR page with given page number and puts result in a dictionary.
+
+    Args:
+        page_number (int): Page number.
+        page (fitz.Page): Page.
+        page_dict (Dict): Dictionary to update.
+        resolution (int): Resolution.
+    """
+    pix = page.get_pixmap(dpi=resolution)
+    mode = "RGBA" if pix.alpha else "RGB"
+    image = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
+    ocr = image_to_data(
+        image, lang="fra", config="--psm 1", output_type="data.frame"
+    )
+    cleaned_ocr = ocr["text"].dropna()
+    if cleaned_ocr.empty:
+        page_dict[page_number] = "vide"
+    else:
+        page_dict[page_number] = cleaned_ocr.str.cat(sep=" ")
+    return
 
 
 def clean_page_content(page_content: str) -> str:
