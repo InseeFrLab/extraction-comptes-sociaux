@@ -28,7 +28,7 @@ fs = s3fs.S3FileSystem(
 
 
 def extract_document_content(
-    pdf_path: str, s3: bool = True, resolution: int = 300
+    pdf_path: str, s3: bool = True, resolution: int = 200
 ) -> List[pd.DataFrame]:
     """
     From a path to a pdf file, extract content as a list of

@@ -25,7 +25,7 @@ class PageSelector:
         self,
         pdf_path: str,
         s3: bool = True,
-        resolution: int = 300,
+        resolution: int = 200,
         dpi: int = 300,
     ) -> Image:
         """
@@ -47,7 +47,7 @@ class PageSelector:
         return image
 
     def get_page_number(
-        self, pdf_path: str, s3: bool = True, resolution: int = 300
+        self, pdf_path: str, s3: bool = True, resolution: int = 200
     ) -> int:
         """
         Returns the number of the page containing the fp table.
