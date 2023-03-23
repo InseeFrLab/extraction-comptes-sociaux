@@ -102,17 +102,19 @@ def extract_document_content_ocr(
     # List of threads
     threads = []
     page_dict = {}
+    lock = threading.Lock()
 
     for page_number, page in enumerate(doc):
         threads.append(
             threading.Thread(
                 group=None,
                 target=ocr_page_to_dict,
-                args=(page_number, page, page_dict, resolution),
+                args=(page_number, page, page_dict, resolution, lock),
             )
         )
-    for t in threads:
         t.start()
+
+    # Wait for threads to complete
     for t in threads:
         t.join()
 
@@ -125,7 +127,11 @@ def extract_document_content_ocr(
 
 
 def ocr_page_to_dict(
-    page_number: int, page: fitz.Page, page_dict: Dict, resolution: int = 200
+    page_number: int,
+    page: fitz.Page,
+    page_dict: Dict,
+    resolution: int,
+    lock: threading.Lock,
 ):
     """
     OCR page with given page number and puts result in a dictionary.
@@ -135,6 +141,7 @@ def ocr_page_to_dict(
         page (fitz.Page): Page.
         page_dict (Dict): Dictionary to update.
         resolution (int): Resolution.
+        lock (threading.Lock): Lock.
     """
     pix = page.get_pixmap(dpi=resolution)
     mode = "RGBA" if pix.alpha else "RGB"
@@ -143,10 +150,11 @@ def ocr_page_to_dict(
         image, lang="fra", config="--psm 1", output_type="data.frame"
     )
     cleaned_ocr = ocr["text"].dropna()
-    if cleaned_ocr.empty:
-        page_dict[page_number] = "vide"
-    else:
-        page_dict[page_number] = cleaned_ocr.str.cat(sep=" ")
+    with lock:
+        if cleaned_ocr.empty:
+            page_dict[page_number] = "vide"
+        else:
+            page_dict[page_number] = cleaned_ocr.str.cat(sep=" ")
     return
 
 
