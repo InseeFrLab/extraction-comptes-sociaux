@@ -105,13 +105,12 @@ def extract_document_content_ocr(
     lock = threading.Lock()
 
     for page_number, page in enumerate(doc):
-        threads.append(
-            threading.Thread(
-                group=None,
-                target=ocr_page_to_dict,
-                args=(page_number, page, page_dict, resolution, lock),
-            )
+        t = threading.Thread(
+            group=None,
+            target=ocr_page_to_dict,
+            args=(page_number, page, page_dict, resolution, lock),
         )
+        threads.append(t)
         t.start()
 
     # Wait for threads to complete
