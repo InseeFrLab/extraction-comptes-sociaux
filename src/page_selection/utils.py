@@ -370,7 +370,7 @@ def get_numeric_char_rate(page_content: str):
     """
     try:
         return float(len("".join(re.findall("\d", page_content)))) / float(
-            len(page_content)
+            len(re.sub(r"\s+", "", page_content))
         )
     except ZeroDivisionError:
         return 0.0
