@@ -52,7 +52,7 @@ def extract_document_content(
         return extract_document_content_ocr(
             doc,
             resolution=resolution,
-            parallel=parellel,
+            parallel=parallel,
             maxthreads=maxthreads,
         )
     else:
