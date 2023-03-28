@@ -29,7 +29,11 @@ fs = s3fs.S3FileSystem(
 
 
 def extract_document_content(
-    pdf_path: str, s3: bool = True, resolution: int = 200
+    pdf_path: str,
+    s3: bool = True,
+    resolution: int = 200,
+    parallel: bool = True,
+    maxthreads: int = 10,
 ) -> List[pd.DataFrame]:
     """
     From a path to a pdf file, extract content as a list of
@@ -39,11 +43,18 @@ def extract_document_content(
         pdf_path (str): Path to PDF file.
         s3 (bool): True if file is on s3.
         resolution (int): Resolution.
+        parallel (bool): True if OCR should be in parallel in multiple threads.
+        maxthreads (int): Max. number of threads for parallel processing.
     """
     doc = load_pdf(pdf_path, s3)
 
     if is_scan(doc):
-        return extract_document_content_ocr(doc, resolution=resolution)
+        return extract_document_content_ocr(
+            doc,
+            resolution=resolution,
+            parallel=parellel,
+            maxthreads=maxthreads,
+        )
     else:
         return extract_document_content_fitz(doc)
 
@@ -89,7 +100,10 @@ def extract_document_content_fitz(doc: fitz.Document) -> List[pd.DataFrame]:
 
 
 def extract_document_content_ocr(
-    doc: fitz.Document, resolution: int = 200
+    doc: fitz.Document,
+    resolution: int = 200,
+    parallel: bool = True,
+    maxthreads: int = 10,
 ) -> List[str]:
     """
     From a fitz.Document object, extract content as a list of
@@ -98,29 +112,44 @@ def extract_document_content_ocr(
     Args:
         doc (fitz.Document): PDF document.
         resolution (int): Resolution.
+        parallel (bool): True if OCR should be in parallel in multiple threads.
+        maxthreads (int): Max. number of threads for parallel processing.
     """
-    # List of threads
-    threads = []
-    page_dict = {}
-    lock = threading.Lock()
-
-    for page_number, page in enumerate(doc):
-        t = threading.Thread(
-            group=None,
-            target=ocr_page_to_dict,
-            args=(page_number, page, page_dict, resolution, lock),
-        )
-        threads.append(t)
-        t.start()
-
-    # Wait for threads to complete
-    for t in threads:
-        t.join()
-
-    # Transform output dict
     page_list = []
-    for key, value in sorted(page_dict.items()):
-        page_list.append(value)
+    if not parallel:
+        for page in doc:
+            page_list.append(extract_ocr_page(page, resolution))
+    # Parallel workflow
+    else:
+        # List of threads
+        threads = []
+        lock = threading.Lock()
+        semaphore = threading.BoundedSemaphore(value=maxthreads)
+
+        page_dict = {}
+        for page_number, page in enumerate(doc):
+            t = threading.Thread(
+                group=None,
+                target=ocr_page_to_dict,
+                args=(
+                    page_number,
+                    page,
+                    page_dict,
+                    resolution,
+                    lock,
+                    semaphore,
+                ),
+            )
+            threads.append(t)
+            t.start()
+
+        # Wait for threads to complete
+        for t in threads:
+            t.join()
+
+        # Transform output dict
+        for key, value in sorted(page_dict.items()):
+            page_list.append(value)
 
     return page_list
 
@@ -131,6 +160,7 @@ def ocr_page_to_dict(
     page_dict: Dict,
     resolution: int,
     lock: threading.Lock,
+    semaphore: threading.BoundedSemaphore,
 ):
     """
     OCR page with given page number and puts result in a dictionary.
@@ -141,6 +171,22 @@ def ocr_page_to_dict(
         page_dict (Dict): Dictionary to update.
         resolution (int): Resolution.
         lock (threading.Lock): Lock.
+        semaphore (threading.BoundedSemaphore): Semaphore.
+    """
+    with semaphore:
+        page_content = extract_ocr_page(page, resolution)
+        with lock:
+            page_dict[page_number] = page_content
+        return
+
+
+def extract_ocr_page(page: fitz.Page, resolution: int = 200):
+    """
+    Extract text content from PDF fitz Page using Tesseract OCR.
+
+    Args:
+        page (fitz.Page): Page.
+        resolution (int): Resolution.
     """
     pix = page.get_pixmap(dpi=resolution)
     mode = "RGBA" if pix.alpha else "RGB"
@@ -149,12 +195,10 @@ def ocr_page_to_dict(
         image, lang="fra", config="--psm 1", output_type="data.frame"
     )
     cleaned_ocr = ocr["text"].dropna()
-    with lock:
-        if cleaned_ocr.empty:
-            page_dict[page_number] = "vide"
-        else:
-            page_dict[page_number] = cleaned_ocr.str.cat(sep=" ")
-    return
+    if cleaned_ocr.empty:
+        return "vide"
+    else:
+        return cleaned_ocr.str.cat(sep=" ")
 
 
 def clean_page_content(page_content: str) -> str:
