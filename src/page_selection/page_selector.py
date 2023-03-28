@@ -51,7 +51,7 @@ class PageSelector:
             s3 (bool): True if file is on s3.
             dpi (int): Resolution of picture output.
         """
-        page_number = self.get_page_number(pdf_path, s3, self.resolution)
+        page_number = self.get_page_number(pdf_path, s3)
 
         doc = load_pdf(pdf_path, s3)
         pix = doc[page_number].get_pixmap(dpi=300)
