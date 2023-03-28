@@ -11,21 +11,35 @@ class PageSelector:
     Page selector.
     """
 
-    def __init__(self, clf: RandomForestWrapper, threshold: float = 0.5):
+    def __init__(
+        self,
+        clf: RandomForestWrapper,
+        threshold: float = 0.5,
+        resolution: int = 200,
+        parallel: bool = True,
+        maxthreads: int = 10,
+    ):
         """
         Constructor.
 
         Args:
             clf (RandomForestClassifier): Classifier.
+            threshold: Threshold under which a page is not classified as containing
+                the table.
+            resolution (int): Resolution used for the OCR.
+            parallel (bool): True if OCR should be in parallel in multiple threads.
+            maxthreads (int): Max. number of threads for parallel processing.
         """
         self.clf = clf
         self.threshold = threshold
+        self.resolution = resolution
+        self.parallel = parallel
+        self.maxthreads = maxthreads
 
     def get_page(
         self,
         pdf_path: str,
         s3: bool = True,
-        resolution: int = 200,
         dpi: int = 300,
     ) -> Image:
         """
@@ -35,10 +49,9 @@ class PageSelector:
         Args:
             pdf_path (str): Path to pdf file.
             s3 (bool): True if file is on s3.
-            resolution (int): Resolution used for determining page number.
             dpi (int): Resolution of picture output.
         """
-        page_number = self.get_page_number(pdf_path, s3, resolution)
+        page_number = self.get_page_number(pdf_path, s3, self.resolution)
 
         doc = load_pdf(pdf_path, s3)
         pix = doc[page_number].get_pixmap(dpi=300)
@@ -46,19 +59,20 @@ class PageSelector:
         image = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
         return image
 
-    def get_page_number(
-        self, pdf_path: str, s3: bool = True, resolution: int = 200
-    ) -> int:
+    def get_page_number(self, pdf_path: str, s3: bool = True) -> int:
         """
         Returns the number of the page containing the fp table.
 
         Args:
             pdf_path (str): Path to pdf file.
+            s3 (bool): Indicates if s3 file system should be used.
 
         Returns:
             int: Number of page with the "filiales et participations" table.
         """
-        page_list = extract_document_content(pdf_path, s3, resolution)
+        page_list = extract_document_content(
+            pdf_path, s3, self.resolution, self.parallel, self.maxthreads
+        )
 
         clean_page_list = []
         for page in page_list:
