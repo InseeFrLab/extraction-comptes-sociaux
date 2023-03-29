@@ -88,8 +88,8 @@ def main(test_size, starting_data, extra_data):
     with tempfile.TemporaryDirectory() as tmpdirname:
         with open(tmpdirname + "tokenizer.pkl", "wb") as f:
             pickle.dump(vectorizer, f)
-        scipy.sparse.save_npz(tmpdirname + 'X_train.npz', X_train)
-        scipy.sparse.save_npz(tmpdirname + 'X_test.npz', X_test)
+        sparse.save_npz(tmpdirname + 'X_train.npz', X_train)
+        sparse.save_npz(tmpdirname + 'X_test.npz', X_test)
         with open(tmpdirname + "y_train.pkl", "wb") as f:
             pickle.dump(y_train, f)
         with open(tmpdirname + "y_test.pkl", "wb") as f:
