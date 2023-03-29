@@ -40,12 +40,12 @@ def main(test_size, starting_data, extra_data):
 
     if bool(starting_data):
         flat_corpus, valid_labels, num_rates = load_labeled_data()
-        (
-            flat_corpus_extra,
-            valid_labels_extra,
-            num_rates_extra,
-        ) = load_extra_labeled_data()
         if bool(extra_data):
+            (
+                flat_corpus_extra,
+                valid_labels_extra,
+                num_rates_extra,
+            ) = load_extra_labeled_data()
             flat_corpus += flat_corpus_extra
             valid_labels += valid_labels_extra
             num_rates += num_rates_extra
