@@ -1,4 +1,9 @@
 #!/bin/bash
+AWS_ACCESS_KEY_ID=`vault kv get -field=ACCESS_KEY onyxia-kv/projet-extraction-tableaux/s3_creds` && export AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY=`vault kv get -field=SECRET_KEY onyxia-kv/projet-extraction-tableaux/s3_creds` && export AWS_SECRET_ACCESS_KEY
+unset AWS_SESSION_TOKEN
+export MLFLOW_S3_ENDPOINT_URL='https://minio.lab.sspcloud.fr'
+
 # Installing packages
 sudo apt-get update
 sudo apt-get upgrade -y

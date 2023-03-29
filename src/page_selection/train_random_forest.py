@@ -26,7 +26,7 @@ import numpy as np
 from scipy import sparse
 
 
-def main(remote_server_uri: str, experiment_name: str, run_name: str):
+def main(remote_server_uri: str, experiment_name: str, run_name: str, tag: str):
     """
     Main method.
 
@@ -108,9 +108,6 @@ def main(remote_server_uri: str, experiment_name: str, run_name: str):
         os.remove("tokenizer.pkl")
 
         # Test time
-        X_test = vectorizer.transform(test_corpus)
-        X_test = sparse.hstack((X_test, np.array(test_num_rates)[:, None]))
-
         t0 = time()
         pred = clf.predict(X_test)
         test_time = time() - t0
@@ -123,6 +120,7 @@ def main(remote_server_uri: str, experiment_name: str, run_name: str):
 
         for param, value in params.items():
             mlflow.log_param(param, value)
+        mlflow.log_param("data_tag", tag)
         mlflow.log_param("model_type", clf_descr)
 
         mlflow.log_metric("acc_test", accuracy)
@@ -150,5 +148,6 @@ if __name__ == "__main__":
     remote_server_uri = sys.argv[1]
     experiment_name = sys.argv[2]
     run_name = sys.argv[3]
+    tag = sys.argv[4]
 
-    main(remote_server_uri, experiment_name, run_name)
+    main(remote_server_uri, experiment_name, run_name, tag)
