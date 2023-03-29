@@ -35,23 +35,30 @@ def main(remote_server_uri: str, experiment_name: str, run_name: str):
         experiment_name (str): MLFlow experiment name.
         run_name (str): MLFlow run name.
     """
-    flat_corpus, valid_labels = load_labeled_data()
-    flat_corpus_extra, valid_labels_extra = load_extra_labeled_data()
+    flat_corpus, valid_labels, num_rates = load_labeled_data()
+    (
+        flat_corpus_extra,
+        valid_labels_extra,
+        num_rates_extra,
+    ) = load_extra_labeled_data()
     flat_corpus += flat_corpus_extra
     valid_labels += valid_labels_extra
-
-    # Add new feature : rate of numeric characters
-    num_rates = [get_numeric_char_rate(content) for content in flat_corpus]
+    num_rates += num_rates_extra
 
     # Split
     random_state = 42
     test_size = 0.2
-    train_num_rates, test_num_rates = train_test_split(
-        num_rates, test_size=test_size, random_state=random_state
-    )
-    train_corpus, test_corpus, y_train, y_test = train_test_split(
+    (
+        train_corpus,
+        test_corpus,
+        y_train,
+        y_test,
+        train_num_rates,
+        test_num_rates,
+    ) = train_test_split(
         flat_corpus,
         valid_labels,
+        num_rates,
         test_size=test_size,
         random_state=random_state,
     )
