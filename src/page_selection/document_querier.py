@@ -1,6 +1,7 @@
 """
 Class to query documents using the INPI API.
 """
+from typing import Tuple
 import shutil
 import glob
 from datetime import datetime
@@ -57,15 +58,32 @@ class DocumentQuerier:
             save_path (str): Path to save document.
             s3 (bool): True if saving on s3.
         """
+        availability, document_id = self.check_document_availability(
+            siren, year
+        )
+        if not availability:
+            raise KeyError(f"No document found for {siren} in {year}.")
+        self.download_from_id(document_id, save_path, s3)
+        return
+
+    def check_document_availability(
+        self, siren: str, year: int
+    ) -> Tuple[bool, str]:
+        """
+        Query a document using the INPI API. Save at save_path.
+
+        Args:
+            siren (str): Siren identifier.
+            year (int): Year for which document is desired.
+        """
         document_list = self.list_documents(siren)
         for document_metadata in document_list:
             date_cloture = document_metadata["dateCloture"]
             year_cloture = datetime.strptime(date_cloture, "%Y-%m-%d").year
             if year == year_cloture:
                 document_id = document_metadata["id"]
-                self.download_from_id(document_id, save_path, s3)
-                return
-        raise KeyError(f"No document found for {siren} in {year}.")
+                return True, document_id
+        return False, ""
 
     def download_from_id(
         self, identifier: str, save_path: str, s3: bool = True

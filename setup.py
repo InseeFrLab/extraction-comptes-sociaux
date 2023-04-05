@@ -10,7 +10,7 @@ setuptools.setup(
     description="Package pour l'extraction de tableau des comptes sociaux",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://git.lab.sspcloud.fr/ssplab/comptes-sociaux-to-tableau-fp-csv",
+    url="https://github.com/InseeFrLab/extraction-comptes-sociaux",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

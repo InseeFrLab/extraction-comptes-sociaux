@@ -109,7 +109,7 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
         transforms_preprocessing=transforms_preprocessing,
         transforms_augmentation=transforms_augmentation,
         batch_size=batch_size,
-        num_workers=0,
+        num_workers=40,
     )  # type: ignore
 
     model = TableNetModule(
