@@ -8,6 +8,8 @@ import os
 import sys
 from tqdm import tqdm
 from time import time
+import tempfile
+import scipy
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
 from .utils import (
@@ -18,6 +20,7 @@ from .utils import (
     load_labeled_data,
     load_extra_labeled_data,
     get_numeric_char_rate,
+    fs,
 )
 from .model_wrapper import RandomForestWrapper
 from matplotlib import pyplot as plt
@@ -26,7 +29,9 @@ import numpy as np
 from scipy import sparse
 
 
-def main(remote_server_uri: str, experiment_name: str, run_name: str, tag: str):
+def main(
+    remote_server_uri: str, experiment_name: str, run_name: str, tag: str
+):
     """
     Main method.
 
@@ -35,39 +40,20 @@ def main(remote_server_uri: str, experiment_name: str, run_name: str, tag: str):
         experiment_name (str): MLFlow experiment name.
         run_name (str): MLFlow run name.
     """
-    flat_corpus, valid_labels, num_rates = load_labeled_data()
-    (
-        flat_corpus_extra,
-        valid_labels_extra,
-        num_rates_extra,
-    ) = load_extra_labeled_data()
-    flat_corpus += flat_corpus_extra
-    valid_labels += valid_labels_extra
-    num_rates += num_rates_extra
+    # Load data
+    s3_dir = "projet-extraction-tableaux/data/page_selection_data/" + tag + "/"
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        fs.get(rpath=s3_dir, lpath=tmpdirname + "/", recursive=True)
 
-    # Split
-    random_state = 42
-    test_size = 0.2
-    (
-        train_corpus,
-        test_corpus,
-        y_train,
-        y_test,
-        train_num_rates,
-        test_num_rates,
-    ) = train_test_split(
-        flat_corpus,
-        valid_labels,
-        num_rates,
-        test_size=test_size,
-        random_state=random_state,
-    )
+        X_train = scipy.sparse.load_npz(tmpdirname + "/X_train.npz")
+        X_test = scipy.sparse.load_npz(tmpdirname + "/X_test.npz")
 
-    vectorizer, X_train = fit_transform_vectorizer(train_corpus)
-    X_train = sparse.hstack((X_train, np.array(train_num_rates)[:, None]))
-
-    vectorizer, X_train = fit_transform_vectorizer(train_corpus)
-    X_train = sparse.hstack((X_train, np.array(train_num_rates)[:, None]))
+        with open(tmpdirname + "/y_train.pkl", "rb") as f:
+            y_train = pickle.load(f)
+        with open(tmpdirname + "/y_test.pkl", "rb") as f:
+            y_test = pickle.load(f)
+        with open(tmpdirname + "/tokenizer.pkl", "rb") as f:
+            vectorizer = pickle.load(f)
 
     # Training classifier
     params = {

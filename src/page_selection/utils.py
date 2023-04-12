@@ -337,6 +337,32 @@ def load_extra_labeled_data():
     return flat_corpus, valid_labels, num_rates
 
 
+def load_extra_labeled_data_checked():
+    """ """
+
+    with fs.open(
+        "s3://projet-extraction-tableaux/data/correct_first250.pickle", "rb"
+    ) as f:
+        df = pickle.load(f)
+
+    checked_siren = df.siren.unique()[:49]
+    df = df[df.siren.isin(checked_siren)]
+
+    flat_corpus = list(df.text)
+    flat_corpus_with_number = [
+        clean_page_content(page) for page in flat_corpus
+    ]
+    flat_corpus = [remove_number(page) for page in flat_corpus_with_number]
+    valid_labels = list(df.tableau_f_et_p)
+
+    num_rates = []
+    num_rates = [
+        get_numeric_char_rate(content) for content in flat_corpus_with_number
+    ]
+
+    return flat_corpus, valid_labels, num_rates
+
+
 def load_labeled_data():
     """
     Load data labeled manually on a selection of
@@ -369,7 +395,7 @@ def load_labeled_data():
     ]
     for file_name in tqdm(labeled_file_names):
         clean_document_content = []
-        page_list = extract_document_content(file_name, resolution=50)
+        page_list = extract_document_content(file_name, resolution=200)
         for page in page_list:
             clean_content = clean_page_content(page)
             clean_document_content.append(clean_content)
