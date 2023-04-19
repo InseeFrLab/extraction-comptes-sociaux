@@ -341,12 +341,9 @@ def load_extra_labeled_data_checked():
     """ """
 
     with fs.open(
-        "s3://projet-extraction-tableaux/data/correct_first250.pickle", "rb"
+        "s3://projet-extraction-tableaux/data/df_train_rf_corr.pickle", "rb"
     ) as f:
         df = pickle.load(f)
-
-    checked_siren = df.siren.unique()[:49]
-    df = df[df.siren.isin(checked_siren)]
 
     flat_corpus = list(df.text)
     flat_corpus_with_number = [

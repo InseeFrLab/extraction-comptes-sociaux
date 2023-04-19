@@ -117,6 +117,7 @@ def main(
         # Log confusion matrix
         ax = plt.subplot()
         plot = sns.heatmap(cm, annot=True, fmt="g", ax=ax)
+        print(cm)
 
         # labels, title and ticks
         ax.set_xlabel("Predicted labels")

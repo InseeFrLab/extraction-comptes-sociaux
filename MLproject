@@ -6,7 +6,7 @@ entry_points:
       remote_server_uri: {type: str, default: https://mlflow.lab.sspcloud.fr}
       experiment_name: {type: str, default: page_selection}
       run_name: {type: str, default: default}
-      tag: {type: str, default: "2023-04-12 17:13:49.984441"}
+      tag: {type: str, default: "2023-04-19 17:36:50.991321"}
     command: "python3 -m src.page_selection.train_random_forest {remote_server_uri} {experiment_name} {run_name} {tag}"
   extraction:
     parameters:
