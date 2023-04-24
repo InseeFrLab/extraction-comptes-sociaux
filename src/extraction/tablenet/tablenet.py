@@ -252,14 +252,6 @@ class TableNet(nn.Module):
         for param in self.vgg.parameters():
             param.requires_grad = False
         self.layers = [18, 27] if not batch_norm else [26, 39]
-        self.model = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=1),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.8),
-            nn.Conv2d(512, 512, kernel_size=1),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.8),
-        )
         self.table_decoder = TableDecoder(num_class)
         self.column_decoder = ColumnDecoder(num_class)
 
@@ -277,9 +269,15 @@ class TableNet(nn.Module):
             x = layer(x)
             if i in self.layers:
                 results.append(x)
+
         x_table = self.table_decoder(x, results)
+        table_output = torch.sigmoid(x_table)
+        del x_table
+
         x_column = self.column_decoder(x, results)
-        return torch.sigmoid(x_table), torch.sigmoid(x_column)
+        column_output = torch.sigmoid(x_column)
+        del x_column
+        return table_output, column_output
 
 
 class ColumnDecoder(nn.Module):

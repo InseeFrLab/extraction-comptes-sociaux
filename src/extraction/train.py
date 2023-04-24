@@ -1,9 +1,12 @@
 """Module d'apprentissage"""
 import yaml
 import sys
+from time import sleep
+from typing import Tuple
 import albumentations as album
 from pathlib import Path
 import torch
+from torch import nn
 import gc
 import mlflow
 import pytorch_lightning as pl
@@ -14,7 +17,7 @@ from pytorch_lightning.callbacks import (
     LearningRateMonitor,
 )
 
-from .tablenet import MarmotDataModule, TableNetModule
+from .tablenet import MarmotDataModule, TableNetModule, DiceLoss
 from .utils import get_root_path
 from .optimizers import optimizers
 from .schedulers import schedulers
@@ -107,9 +110,9 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
         train_data=train_data,
         test_data=test_data,
         transforms_preprocessing=transforms_preprocessing,
-        transforms_augmentation=transforms_augmentation,
+        transforms_augmentation=transforms_preprocessing,
         batch_size=batch_size,
-        num_workers=40,
+        num_workers=0,
     )  # type: ignore
 
     model = TableNetModule(
@@ -129,6 +132,14 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
     )
     lr_monitor = LearningRateMonitor(logging_interval="step")
 
+    batch_size = get_batch_size(
+        model=model.model,
+        device=model.device,
+        input_shape=(3, *image_size),
+        output_shape=image_size,
+        dataset_size=len(data_module.dataset_train),
+    )
+
     mlflow.set_tracking_uri(remote_server_uri)
     mlflow.set_experiment(experiment_name)
     mlflow.pytorch.autolog(registered_model_name="extraction")
@@ -142,6 +153,62 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
         )
         trainer.fit(model, datamodule=data_module)
         trainer.test(datamodule=data_module)
+
+
+def get_batch_size(
+    model: nn.Module,
+    device: torch.device,
+    input_shape: Tuple[int, int, int],
+    output_shape: Tuple[int, int],
+    dataset_size: int,
+    max_batch_size: int = None,
+    num_iterations: int = 5,
+) -> int:
+    model.to(device)
+    model.train(True)
+    optimizer = torch.optim.Adam(model.parameters())
+
+    print("Test batch size")
+    batch_size = 2
+    while True:
+        if max_batch_size is not None and batch_size >= max_batch_size:
+            batch_size = max_batch_size
+            break
+        if batch_size >= dataset_size:
+            batch_size = batch_size // 2
+            break
+        try:
+            for _ in range(num_iterations):
+                # dummy inputs and targets
+                inputs = torch.rand(*(batch_size, *input_shape), device=device)
+                table_targets = torch.rand(
+                    *(batch_size, *output_shape), device=device
+                )
+                column_targets = torch.rand(
+                    *(batch_size, *output_shape), device=device
+                )
+
+                output_table, output_column = model(inputs)
+
+                dice_loss = DiceLoss()
+                loss_table = dice_loss(output_table, table_targets)
+                loss_column = dice_loss(output_column, column_targets)
+
+                loss = loss_table + loss_column
+                loss.backward()
+                optimizer.step()
+                optimizer.zero_grad()
+            batch_size *= 2
+            print(f"\tTesting batch size {batch_size}")
+            sleep(3)
+        except RuntimeError:
+            print(f"\tOOM at batch size {batch_size}")
+            batch_size //= 2
+            break
+    del model, optimizer
+    torch.cuda.empty_cache()
+    print(f"Final batch size {batch_size}")
+    return batch_size
 
 
 if __name__ == "__main__":

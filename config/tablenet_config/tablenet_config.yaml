@@ -1,15 +1,16 @@
 s3: True
-batch_size: 4
-max_epochs: 2
-num_sanity_val_steps: 0
-patience: 3
+batch_size: 6
+max_epochs: 100
+num_sanity_val_steps: 1
+patience: 5
 batch_norm: False
 fp_data: True
 
 optimizer_params:
   optimizer: Adam
-  lr: 0.001
+  lr: 0.0003
 
 scheduler_params:
   scheduler: ReduceLROnPlateau
   interval: epoch
+  patience: 3
