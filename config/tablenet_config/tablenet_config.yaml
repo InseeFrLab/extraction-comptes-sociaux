@@ -1,5 +1,5 @@
 s3: True
-batch_size: 6
+batch_size: 16
 max_epochs: 100
 num_sanity_val_steps: 1
 patience: 5
