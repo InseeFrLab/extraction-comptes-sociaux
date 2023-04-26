@@ -344,7 +344,11 @@ def load_extra_labeled_data_checked():
         "s3://projet-extraction-tableaux/data/df_train_rf_corr.pickle", "rb"
     ) as f:
         df = pickle.load(f)
-
+    
+    seuil = 70
+    df.accOCR = pd.to_numeric(df.accOCR.replace(',', '.', regex=True))
+    df = df[(df.accOCR.isnull()) | (df.accOCR > seuil)]
+    
     flat_corpus = list(df.text)
     flat_corpus_with_number = [
         clean_page_content(page) for page in flat_corpus
