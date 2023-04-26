@@ -11,6 +11,7 @@ from time import time
 import tempfile
 import scipy
 from sklearn import metrics
+import fasttext
 from sklearn.model_selection import train_test_split
 from .utils import (
     clean_page_content,
@@ -55,8 +56,8 @@ def main(
 
     params = {
         "dim": 150,
-        "lr": 0.2,
-        "epoch": 50,
+        "lr": 0.25,
+        "epoch": 30,
         "wordNgrams": 3,
         "minn": 3,
         "maxn": 4,
@@ -76,16 +77,18 @@ def main(
                 formatted_item = f"__label__{label} {lib}"
                 file.write(f"{formatted_item}\n")
 
+        t0 = time()
         model = fasttext.train_supervised(
             "train_text.txt", **params, verbose=2
         )
+        train_time = time() - t0
 
         fasttext_model_path = run_name + ".bin"
         model.save_model(fasttext_model_path)
 
         artifacts = {
             "fasttext_model_path": fasttext_model_path,
-            "train_data": "data/train_text.txt",
+            "train_data": "train_text.txt",
         }
 
         mlflow.pyfunc.log_model(
@@ -95,7 +98,7 @@ def main(
         )
 
         os.remove(fasttext_model_path)
-        os.remove("data/train_text.txt")
+        os.remove("train_text.txt")
 
         # Test time
         t0 = time()
