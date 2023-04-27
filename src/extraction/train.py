@@ -1,7 +1,6 @@
 """Module d'apprentissage"""
 import yaml
 import sys
-from typing import Tuple
 import albumentations as album
 from pathlib import Path
 import torch
@@ -45,7 +44,6 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
     gc.collect()
 
     image_size = (896, 896)
-    transforms_augmentation = album.Compose([])
     transforms_augmentation = album.Compose(
         [
             album.Resize(1024, 1024, always_apply=True),
@@ -108,7 +106,7 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
         train_data=train_data,
         test_data=test_data,
         transforms_preprocessing=transforms_preprocessing,
-        transforms_augmentation=transforms_preprocessing,
+        transforms_augmentation=transforms_augmentation,
         batch_size=batch_size,
         num_workers=0,
     )  # type: ignore
