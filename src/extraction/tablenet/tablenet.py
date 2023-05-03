@@ -11,6 +11,7 @@ from torch import nn, optim
 from torch.nn import functional as F
 from torchvision.models import vgg19, vgg19_bn, VGG19_Weights, VGG19_BN_Weights
 from .metrics import binary_mean_iou
+from .segmentation import LargeColumnDecoder
 
 
 class TableNetModule(pl.LightningModule):
@@ -29,6 +30,7 @@ class TableNetModule(pl.LightningModule):
         scheduler_interval: str,
         num_class: int = 1,
         batch_norm: bool = False,
+        large: bool = False,
     ):
         """
         Initialize TableNet Module.
@@ -237,13 +239,16 @@ class TableNet(nn.Module):
     TableNet.
     """
 
-    def __init__(self, num_class: int, batch_norm: bool = False):
+    def __init__(
+        self, num_class: int, batch_norm: bool = False, large: bool = False
+    ):
         """
         Initialize TableNet.
 
         Args:
             num_class (int): Number of classes per point.
             batch_norm (bool): Select VGG with or without batch normalization.
+            large (bool): Should decoder be large or not.
         """
         super().__init__()
 
@@ -256,7 +261,10 @@ class TableNet(nn.Module):
             param.requires_grad = False
         self.feature_maps_ids = [18, 27] if not batch_norm else [26, 39]
         self.table_decoder = TableDecoder(num_class)
-        self.column_decoder = ColumnDecoder(num_class)
+        if large:
+            self.column_decoder = LargeColumnDecoder(num_classes)
+        else:
+            self.column_decoder = ColumnDecoder(num_class)
 
     def forward(self, x):
         """
