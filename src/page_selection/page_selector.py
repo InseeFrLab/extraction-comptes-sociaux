@@ -2,8 +2,8 @@
 Page selector.
 """
 from PIL import Image
-from .model_wrapper import RandomForestWrapper
 from .utils import clean_page_content, extract_document_content, load_pdf
+import mlflow
 
 
 class PageSelector:
@@ -13,7 +13,7 @@ class PageSelector:
 
     def __init__(
         self,
-        clf: RandomForestWrapper,
+        clf: mlflow.pyfunc.PythonModel,
         threshold: float = 0.5,
         resolution: int = 200,
         parallel: bool = True,
@@ -23,7 +23,7 @@ class PageSelector:
         Constructor.
 
         Args:
-            clf (RandomForestClassifier): Classifier.
+            clf (mlflow.pyfunc.PythonModel): Classifier.
             threshold: Threshold under which a page is not classified as containing
                 the table.
             resolution (int): Resolution used for the OCR.

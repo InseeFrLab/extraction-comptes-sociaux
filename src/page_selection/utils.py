@@ -210,22 +210,18 @@ def clean_page_content(page_content: str) -> str:
         page_content (str): Content of a page.
     """
     # Remove line breaks
-    content = page_content.replace("\r", "").replace("\n", "")
+    content = page_content.replace("\r", " ").replace("\n", " ")
     # Remove punctuation
-    content = re.sub(r"[^\w\s]", "", content)
+    content = re.sub(r"[^\w\s]", " ", content)
 
     words = content.split()
     # Convert to lower case
     words = [word.lower() for word in words]
-    # Remove numbers
-    words_no_numbers = [word for word in words if not word.isdigit()]
     # Remove stopwords and stem
     stopwords = tuple(ntlk_stopwords.words("french"))
     stemmer = SnowballStemmer(language="french")
     words_no_numbers = [
-        stemmer.stem(word)
-        for word in words_no_numbers
-        if word not in stopwords
+        stemmer.stem(word) for word in words if word not in stopwords
     ]
     # Remove accents
     clean_content = " ".join(
@@ -233,6 +229,19 @@ def clean_page_content(page_content: str) -> str:
     )
 
     return clean_content
+
+
+def remove_number(page_content: str) -> str:
+    """
+    Remove all numbers from a string.
+
+    Args:
+        page_content (str): Content of a page.
+    """
+    content = re.sub("[0-9]+", "", page_content)
+    content = re.sub(r"\s+", " ", content).strip()
+
+    return content
 
 
 def create_document_term_matrix(
@@ -314,10 +323,45 @@ def load_extra_labeled_data():
         df = pickle.load(f)
 
     flat_corpus = list(df.text)
-    flat_corpus = [clean_page_content(page) for page in flat_corpus]
+    flat_corpus_with_number = [
+        clean_page_content(page) for page in flat_corpus
+    ]
+    flat_corpus = [remove_number(page) for page in flat_corpus_with_number]
     valid_labels = list(df.tableau_f_et_p)
 
-    return flat_corpus, valid_labels
+    num_rates = []
+    num_rates = [
+        get_numeric_char_rate(content) for content in flat_corpus_with_number
+    ]
+
+    return flat_corpus, valid_labels, num_rates
+
+
+def load_extra_labeled_data_checked():
+    """ """
+
+    with fs.open(
+        "s3://projet-extraction-tableaux/data/df_train_rf_corr.pickle", "rb"
+    ) as f:
+        df = pickle.load(f)
+    
+    seuil = 70
+    df.accOCR = pd.to_numeric(df.accOCR.replace(',', '.', regex=True))
+    df = df[(df.accOCR.isnull()) | (df.accOCR > seuil)]
+    
+    flat_corpus = list(df.text)
+    flat_corpus_with_number = [
+        clean_page_content(page) for page in flat_corpus
+    ]
+    flat_corpus = [remove_number(page) for page in flat_corpus_with_number]
+    valid_labels = list(df.tableau_f_et_p)
+
+    num_rates = []
+    num_rates = [
+        get_numeric_char_rate(content) for content in flat_corpus_with_number
+    ]
+
+    return flat_corpus, valid_labels, num_rates
 
 
 def load_labeled_data():
@@ -333,6 +377,7 @@ def load_labeled_data():
 
     labeled_file_names = []
     valid_labels = []
+    num_rates = []
 
     i = 0
     for file_name, file_labels in labels.items():
@@ -351,14 +396,19 @@ def load_labeled_data():
     ]
     for file_name in tqdm(labeled_file_names):
         clean_document_content = []
-        page_list = extract_document_content(file_name, resolution=50)
+        page_list = extract_document_content(file_name, resolution=200)
         for page in page_list:
             clean_content = clean_page_content(page)
             clean_document_content.append(clean_content)
         corpus.append(clean_document_content)
 
-    flat_corpus = [item for sublist in corpus for item in sublist]
-    return flat_corpus, valid_labels
+    flat_corpus_with_number = [item for sublist in corpus for item in sublist]
+    flat_corpus = [remove_number(page) for page in flat_corpus_with_number]
+    num_rates = [
+        get_numeric_char_rate(content) for content in flat_corpus_with_number
+    ]
+
+    return flat_corpus, valid_labels, num_rates
 
 
 def get_numeric_char_rate(page_content: str):
@@ -370,7 +420,7 @@ def get_numeric_char_rate(page_content: str):
     """
     try:
         return float(len("".join(re.findall("\d", page_content)))) / float(
-            len(page_content)
+            len(re.sub(r"\s+", "", page_content))
         )
     except ZeroDivisionError:
         return 0.0
