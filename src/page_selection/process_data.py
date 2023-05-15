@@ -5,32 +5,16 @@ from typing import List
 import tempfile
 from datetime import datetime
 import pickle
-import json
-import mlflow
-import os
 import sys
-from tqdm import tqdm
-from time import time
-from sklearn import metrics
 from sklearn.model_selection import train_test_split
 from .utils import (
     fs,
-    clean_page_content,
-    extract_document_content,
     fit_transform_vectorizer,
-    train_random_forest,
     load_labeled_data,
-    load_extra_labeled_data,
-    get_numeric_char_rate,
     load_extra_labeled_data_checked,
 )
-from .model_wrapper import RandomForestWrapper
-from matplotlib import pyplot as plt
-import seaborn as sns
 import numpy as np
 from scipy import sparse
-
-import shutil
 
 
 def process_data(test_size: float, starting_data: int, extra_data: int):

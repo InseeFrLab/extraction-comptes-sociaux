@@ -25,9 +25,7 @@ class FastTextWrapper(mlflow.pyfunc.PythonModel):
             context.artifacts["fasttext_model_path"]
         )
 
-    def predict(
-        self, context, input_model
-    ) -> tuple:
+    def predict(self, context, input_model) -> tuple:
         """
         Predict.
 
@@ -38,11 +36,10 @@ class FastTextWrapper(mlflow.pyfunc.PythonModel):
         model_output = self._model.predict(input_model)
 
         predictions = [
-            single_predictions[0].replace("__label__", "") for single_predictions in model_output[0]
+            single_predictions[0].replace("__label__", "")
+            for single_predictions in model_output[0]
         ]
-        probas = [
-            float(single_probas[0]) for single_probas in model_output[1]
-        ]
+        probas = [float(single_probas[0]) for single_probas in model_output[1]]
 
         output = pd.DataFrame(
             {

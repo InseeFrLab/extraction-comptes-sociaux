@@ -24,10 +24,11 @@ class PageSelector:
 
         Args:
             clf (mlflow.pyfunc.PythonModel): Classifier.
-            threshold: Threshold under which a page is not classified as containing
-                the table.
+            threshold: Threshold under which a page is not classified as
+                containing the table.
             resolution (int): Resolution used for the OCR.
-            parallel (bool): True if OCR should be in parallel in multiple threads.
+            parallel (bool): True if OCR should be in parallel in multiple
+                threads.
             maxthreads (int): Max. number of threads for parallel processing.
         """
         self.clf = clf
