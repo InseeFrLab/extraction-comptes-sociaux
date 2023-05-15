@@ -56,8 +56,8 @@ def main(
 
     params = {
         "dim": 150,
-        "lr": 0.25,
-        "epoch": 30,
+        "lr": 0.3,
+        "epoch": 60,
         "wordNgrams": 3,
         "minn": 3,
         "maxn": 4,
