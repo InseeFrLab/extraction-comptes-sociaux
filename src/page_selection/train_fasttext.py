@@ -78,6 +78,7 @@ def main(
 
         mlflow.pyfunc.log_model(
             artifact_path=run_name,
+            code_path=["src/page_selection/"],
             python_model=FastTextWrapper(),
             artifacts=artifacts,
         )

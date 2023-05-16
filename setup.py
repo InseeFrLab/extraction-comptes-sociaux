@@ -32,6 +32,7 @@ setuptools.setup(
         "Pillow",
         "pymupdf",
         "unidecode",
+        "fasttext"
     ],
     packages=[
         "src.page_selection",
