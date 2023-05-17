@@ -80,9 +80,16 @@ class PageSelector:
             clean_page_list.append(clean_page_content(page))
 
         model_output = self.clf.predict(clean_page_list)
-        if model_output["probas"].max() < self.threshold:
+        predictions = model_output["predictions"]
+        probas = model_output["probas"]
+        std_probas = probas.copy()
+        for idx, prediction in enumerate(predictions):
+            if str(prediction) == "0":
+                std_probas[idx] = 1 - probas[idx]
+            
+        if std_probas.max() < self.threshold:
             raise ValueError(
                 "Pas de tableau filiales et participations détecté."
             )
         else:
-            return model_output["probas"].idxmax()
+            return std_probas.idxmax()
