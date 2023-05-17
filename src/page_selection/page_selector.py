@@ -55,7 +55,7 @@ class PageSelector:
         page_number = self.get_page_number(pdf_path, s3)
 
         doc = load_pdf(pdf_path, s3)
-        pix = doc[page_number].get_pixmap(dpi=300)
+        pix = doc[page_number].get_pixmap(dpi=dpi)
         mode = "RGBA" if pix.alpha else "RGB"
         image = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
         return image
