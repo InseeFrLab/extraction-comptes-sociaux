@@ -44,7 +44,6 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
     gc.collect()
 
     image_size = (896, 896)
-    transforms_augmentation = album.Compose([])
     transforms_augmentation = album.Compose(
         [
             album.Resize(1024, 1024, always_apply=True),
@@ -109,7 +108,7 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
         transforms_preprocessing=transforms_preprocessing,
         transforms_augmentation=transforms_augmentation,
         batch_size=batch_size,
-        num_workers=40,
+        num_workers=0,
     )  # type: ignore
 
     model = TableNetModule(
@@ -139,7 +138,14 @@ def main(remote_server_uri, experiment_name, run_name, config_path):
             callbacks=[lr_monitor, checkpoint_callback, early_stop_callback],
             max_epochs=max_epochs,
             num_sanity_val_steps=num_sanity_val_steps,
+            accumulate_grad_batches=2,
+            precision=16,
         )
+
+        # Auto-scale batch size by growing it exponentially
+        tuner = pl.tuner.Tuner(trainer)
+        tuner.scale_batch_size(model, datamodule=data_module, mode="power")
+
         trainer.fit(model, datamodule=data_module)
         trainer.test(datamodule=data_module)
 

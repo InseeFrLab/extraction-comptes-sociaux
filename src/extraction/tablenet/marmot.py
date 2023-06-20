@@ -52,6 +52,10 @@ class MarmotDataset(Dataset):
         image = np.array(Image.open(image_path))
         table_mask = np.expand_dims(np.array(Image.open(table_path)), axis=2)
         column_mask = np.expand_dims(np.array(Image.open(column_path)), axis=2)
+        # Fix bug temporaire
+        table_mask[table_mask > 0] = 255
+        column_mask[column_mask > 0] = 255
+
         mask = np.concatenate([table_mask, column_mask], axis=2) / 255
 
         sample = {"image": image, "mask": mask}

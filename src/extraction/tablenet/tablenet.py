@@ -10,8 +10,8 @@ from PIL import Image
 from torch import nn, optim
 from torch.nn import functional as F
 from torchvision.models import vgg19, vgg19_bn, VGG19_Weights, VGG19_BN_Weights
-
-EPSILON = 1e-15
+from .metrics import binary_mean_iou
+from .segmentation import LargeColumnDecoder
 
 
 class TableNetModule(pl.LightningModule):
@@ -30,6 +30,7 @@ class TableNetModule(pl.LightningModule):
         scheduler_interval: str,
         num_class: int = 1,
         batch_norm: bool = False,
+        large: bool = False,
     ):
         """
         Initialize TableNet Module.
@@ -194,39 +195,43 @@ class TableNetModule(pl.LightningModule):
             output_table (torch.Tensor): Batch of table model outputs.
             output_column (torch.Tensor): Batch of column model outputs.
         """
-        # TODO: clean up
         for i in range(min(len(labels_table), n_images)):
             image = Image.fromarray(
                 255 * labels_table[i].squeeze().cpu().numpy().astype(np.uint8)
             )
             file_name = f"table_label_{i}.png"
-            image.save(file_name)
-            mlflow.log_artifact(file_name, artifact_path="images")
-            os.remove(file_name)
+            self._log_image(image, file_name)
 
             image = Image.fromarray(
                 255 * labels_column[i].squeeze().cpu().numpy().astype(np.uint8)
             )
             file_name = f"column_label_{i}.png"
-            image.save(file_name)
-            mlflow.log_artifact(file_name, artifact_path="images")
-            os.remove(file_name)
+            self._log_image(image, file_name)
 
             image = Image.fromarray(
                 255 * output_table[i].squeeze().cpu().numpy().astype(np.uint8)
             )
             file_name = f"table_output_{i}.png"
-            image.save(file_name)
-            mlflow.log_artifact(file_name, artifact_path="images")
-            os.remove(file_name)
+            self._log_image(image, file_name)
 
             image = Image.fromarray(
                 255 * output_column[i].squeeze().cpu().numpy().astype(np.uint8)
             )
             file_name = f"column_output_{i}.png"
-            image.save(file_name)
-            mlflow.log_artifact(file_name, artifact_path="images")
-            os.remove(file_name)
+            self._log_image(image, file_name)
+
+    @staticmethod
+    def _log_image(image, file_name):
+        """
+        Log a single image with the given file name.
+
+        Args:
+            image (Image): Image.
+            file_name (str): File name.
+        """
+        image.save(file_name)
+        mlflow.log_artifact(file_name, artifact_path="images")
+        os.remove(file_name)
 
 
 class TableNet(nn.Module):
@@ -234,13 +239,16 @@ class TableNet(nn.Module):
     TableNet.
     """
 
-    def __init__(self, num_class: int, batch_norm: bool = False):
+    def __init__(
+        self, num_class: int, batch_norm: bool = False, large: bool = False
+    ):
         """
         Initialize TableNet.
 
         Args:
             num_class (int): Number of classes per point.
             batch_norm (bool): Select VGG with or without batch normalization.
+            large (bool): Should decoder be large or not.
         """
         super().__init__()
 
@@ -251,17 +259,12 @@ class TableNet(nn.Module):
         )
         for param in self.vgg.parameters():
             param.requires_grad = False
-        self.layers = [18, 27] if not batch_norm else [26, 39]
-        self.model = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=1),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.8),
-            nn.Conv2d(512, 512, kernel_size=1),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.8),
-        )
+        self.feature_maps_ids = [18, 27] if not batch_norm else [26, 39]
         self.table_decoder = TableDecoder(num_class)
-        self.column_decoder = ColumnDecoder(num_class)
+        if large:
+            self.column_decoder = LargeColumnDecoder(num_classes)
+        else:
+            self.column_decoder = ColumnDecoder(num_class)
 
     def forward(self, x):
         """
@@ -270,16 +273,21 @@ class TableNet(nn.Module):
         Args:
             x (tensor): Batch of images to perform forward-pass.
 
-        Returns (Tuple[tensor, tensor]): Table, Column prediction.
+        Returns (Tuple[torch.Tensor, torch.Tensor]): Table, Column prediction.
         """
-        results = []
-        for i, layer in enumerate(self.vgg):
-            x = layer(x)
-            if i in self.layers:
-                results.append(x)
-        x_table = self.table_decoder(x, results)
-        x_column = self.column_decoder(x, results)
-        return torch.sigmoid(x_table), torch.sigmoid(x_column)
+        feature_maps = []
+        with torch.no_grad():
+            for i, layer in enumerate(self.vgg):
+                x = layer(x)
+                if i in self.feature_maps_ids:
+                    feature_maps.append(x)
+
+        x_table = self.table_decoder(x, feature_maps)
+        table_output = torch.sigmoid(x_table)
+
+        x_column = self.column_decoder(x, feature_maps)
+        column_output = torch.sigmoid(x_column)
+        return table_output, column_output
 
 
 class ColumnDecoder(nn.Module):
@@ -380,22 +388,3 @@ class DiceLoss(nn.Module):
         )
 
         return 1 - dice
-
-
-def binary_mean_iou(inputs, targets):
-    """Calculate binary mean intersection over union.
-
-    Args:
-        inputs (tensor): Output from the forward pass.
-        targets (tensor): Labels.
-
-    Returns (tensor): Intersection over union value.
-    """
-    output = (inputs > 0).int()
-    if output.shape != targets.shape:
-        targets = torch.squeeze(targets, 1)
-    intersection = (targets * output).sum()
-    union = targets.sum() + output.sum() - intersection
-    result = (intersection + EPSILON) / (union + EPSILON)
-
-    return result
