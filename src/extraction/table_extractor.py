@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import albumentations as album
 from albumentations.pytorch.transforms import ToTensorV2
+from matplotlib import pyplot as plt
 from PIL import Image
 from skimage.filters import threshold_otsu
 from skimage.segmentation import clear_border
@@ -21,6 +22,7 @@ from cv2 import minAreaRect
 from operator import itemgetter
 from .column_extractor import ColumnExtractor
 from .column_assembler import ColumnAssembler
+from .utils import get_root_path
 
 from .data import fs
 from .tablenet import TableNetModule
@@ -55,7 +57,7 @@ class TableExtractor:
         column_threshold: float = 0.4,
         column_extractor: ColumnExtractor = ColumnExtractor(),
         column_assembler: ColumnAssembler = ColumnAssembler(),
-        weights_path: str = "./weights.ckpt"
+        weights_path: str = "./weights.ckpt",
     ):
         """
         Constructor for the TableExtractor class.
@@ -129,7 +131,7 @@ class TableExtractor:
             column_threshold,
             column_extractor,
             column_assembler,
-            weights_path
+            weights_path,
         )
 
     def get_raw_masks(self, image: Image) -> Tuple[np.array, np.array]:
@@ -179,6 +181,16 @@ class TableExtractor:
                 "column_mask": raw_column_mask,
             }
 
+        # First plot
+        plt.rcParams["figure.figsize"] = (20, 10)
+        plt.plot()
+        plt.imshow(image.resize((896, 896)), interpolation="none")
+        plt.imshow(raw_column_mask, interpolation="none", alpha=0.5)
+        plt.savefig(
+            os.path.join(get_root_path(), "output/raw_column_masks.png")
+        )
+        plt.clf()
+
         segmented_tables = self.process_tables(
             self.segment_table_mask(raw_table_mask)
         )
@@ -189,6 +201,20 @@ class TableExtractor:
                 self.segment_column_mask(raw_column_mask, table)
             )
             if segmented_columns:
+                cols_array = np.zeros_like(raw_column_mask)
+                for i, (idx, column) in enumerate(segmented_columns.items()):
+                    cols_array += column
+                # Plot post-treated masks
+                plt.rcParams["figure.figsize"] = (20, 10)
+                plt.plot()
+                plt.imshow(image.resize((896, 896)), interpolation="none")
+                plt.imshow(cols_array, interpolation="none", alpha=0.5)
+                plt.colorbar(orientation="vertical")
+                plt.savefig(
+                    os.path.join(get_root_path(), "output/column_masks.png")
+                )
+                plt.clf()
+
                 if invert_dark_areas:
                     ocr_image = self.invert_dark_areas(image)
                 else:

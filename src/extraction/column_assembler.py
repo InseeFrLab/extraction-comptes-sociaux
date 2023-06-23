@@ -67,5 +67,4 @@ class ColumnAssembler:
             formatted_col.groupby("line_id").agg({"col": " ".join})
             for formatted_col in formatted_cols
         ]
-
-        return pd.concat(formatted_cols, axis=1)
+        return pd.concat(formatted_cols, axis=1).sort_index()
