@@ -234,6 +234,122 @@ class TableNetModule(pl.LightningModule):
         os.remove(file_name)
 
 
+class LegacyTableNetModule(pl.LightningModule):
+    """
+    Pytorch Lightning Module for TableNet.
+    """
+
+    def __init__(
+        self,
+        num_class: int = 1,
+        batch_norm: bool = False,
+        large: bool = False,
+    ):
+        """
+        Initialize LegacyTableNetModule Module.
+
+        Args:
+            num_class (int): Number of classes per point.
+            batch_norm (bool): Select VGG with or without batch normalization.
+        """
+        super().__init__()
+        self.save_hyperparameters()
+
+        self.model = LegacyTableNet(num_class, batch_norm)
+        self.num_class = num_class
+        self.dice_loss = DiceLoss()
+
+    def forward(self, batch):
+        """
+        Perform forward-pass.
+
+        Args:
+            batch (tensor): Batch of images to perform forward-pass.
+
+        Returns (Tuple[tensor, tensor]): Table, Column prediction.
+        """
+        return self.model(batch)
+
+    def training_step(self, batch, batch_idx):
+        """
+        Training step.
+
+        Args:
+            batch (List[Tensor]): Data for training.
+            batch_idx (int): batch index.
+
+        Returns: Tensor
+        """
+        samples, labels_table, labels_column = batch
+        output_table, output_column = self.forward(samples)
+
+        loss_table = self.dice_loss(output_table, labels_table)
+        loss_column = self.dice_loss(output_column, labels_column)
+
+        return loss_table + loss_column
+
+    def validation_step(self, batch, batch_idx):
+        """
+        Validation step.
+
+        Args:
+            batch (List[Tensor]): Data for training.
+            batch_idx (int): batch index.
+
+        Returns: Tensor
+        """
+        samples, labels_table, labels_column = batch
+        output_table, output_column = self.forward(samples)
+
+        loss_table = self.dice_loss(output_table, labels_table)
+        loss_column = self.dice_loss(output_column, labels_column)
+
+        return loss_table + loss_column
+
+    def test_step(self, batch, batch_idx):
+        """
+        Test step.
+
+        Args:
+            batch (List[Tensor]): Data for training.
+            batch_idx (int): batch index.
+
+        Returns: Tensor
+        """
+        samples, labels_table, labels_column = batch
+        output_table, output_column = self.forward(samples)
+
+        loss_table = self.dice_loss(output_table, labels_table)
+        loss_column = self.dice_loss(output_column, labels_column)
+
+        if batch_idx == 0:
+            self._log_images(
+                1,
+                labels_table,
+                labels_column,
+                output_table,
+                output_column,
+            )
+
+        return loss_table + loss_column
+
+    def configure_optimizers(self):
+        """
+        Configure optimizer for pytorch lighting.
+
+        Returns: optimizer and scheduler for pytorch lighting.
+
+        """
+        optimizer = optim.Adam(self.parameters(), lr=0.001)
+        scheduler = {
+            "scheduler": optim.lr_scheduler.ReduceLROnPlateau(optimizer),
+            "monitor": "validation_loss",
+            "interval": "epoch",
+        }
+
+        return [optimizer], [scheduler]
+
+
 class TableNet(nn.Module):
     """
     TableNet.
@@ -354,6 +470,54 @@ class TableDecoder(ColumnDecoder):
             nn.Conv2d(512, 512, kernel_size=1),
             nn.ReLU(inplace=True),
         )
+
+
+class LegacyTableNet(nn.Module):
+    """LegacyTableNet."""
+
+    def __init__(self, num_class: int, batch_norm: bool = False):
+        """Initialize TableNet.
+
+        Args:
+            num_class (int): Number of classes per point.
+            batch_norm (bool): Select VGG with or without batch normalization.
+        """
+        super().__init__()
+        self.vgg = (
+            vgg19(pretrained=True).features
+            if not batch_norm
+            else vgg19_bn(pretrained=True).features
+        )
+        for param in self.vgg.parameters():
+            param.requires_grad = False
+        self.layers = [18, 27] if not batch_norm else [26, 39]
+        self.model = nn.Sequential(
+            nn.Conv2d(512, 512, kernel_size=1),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.8),
+            nn.Conv2d(512, 512, kernel_size=1),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.8),
+        )
+        self.table_decoder = TableDecoder(num_class)
+        self.column_decoder = ColumnDecoder(num_class)
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (tensor): Batch of images to perform forward-pass.
+
+        Returns (Tuple[tensor, tensor]): Table, Column prediction.
+        """
+        results = []
+        for i, layer in enumerate(self.vgg):
+            x = layer(x)
+            if i in self.layers:
+                results.append(x)
+        x_table = self.table_decoder(x, results)
+        x_column = self.column_decoder(x, results)
+        return torch.sigmoid(x_table), torch.sigmoid(x_column)
 
 
 class DiceLoss(nn.Module):

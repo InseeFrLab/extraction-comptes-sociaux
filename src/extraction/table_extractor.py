@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import OrderedDict
 from typing import Union, List, Dict, Tuple
 import sys
+import yaml
 
 import torch
 import numpy as np
@@ -23,9 +24,10 @@ from operator import itemgetter
 from .column_extractor import ColumnExtractor
 from .column_assembler import ColumnAssembler
 from .utils import get_root_path
-
+from .optimizers import optimizers
+from .schedulers import schedulers
 from .data import fs
-from .tablenet import TableNetModule
+from .tablenet import TableNetModule, LegacyTableNetModule
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -83,6 +85,7 @@ class TableExtractor:
         self.column_assembler = column_assembler
 
         self.model = model
+        print(model)
         self.model.eval()
         self.model.requires_grad_(False)
 
@@ -115,7 +118,8 @@ class TableExtractor:
         """
         if on_s3:
             fs.get(checkpoint_path, "./weights.ckpt")
-            model = TableNetModule.load_from_checkpoint("./weights.ckpt")
+            # model = TableNetModule.load_from_checkpoint("./weights.ckpt")
+            model = LegacyTableNetModule.load_from_checkpoint("./weights.ckpt")
             os.remove("./weights.ckpt")
         else:
             model = TableNetModule.load_from_checkpoint(checkpoint_path)

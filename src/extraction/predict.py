@@ -22,11 +22,13 @@ def main(args):
     """
     model_name = "extraction"
     version = args.version
-    clf = mlflow.pytorch.load_model(
-        f"models:/{model_name}/{version}", map_location=torch.device("cpu")
+    # clf = mlflow.pytorch.load_model(
+    #     f"models:/{model_name}/{version}", map_location=torch.device("cpu")
+    # )
+    # table_extractor = TableExtractor(model=clf)
+    table_extractor = TableExtractor.from_checkpoint(
+        "projet-extraction-tableaux/logs/TableNetModule/version_00/checkpoints/marmot_model.ckpt"
     )
-
-    table_extractor = TableExtractor(model=clf)
 
     TEST_DATA = [
         # "305756413",

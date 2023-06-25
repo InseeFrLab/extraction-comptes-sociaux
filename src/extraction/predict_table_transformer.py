@@ -68,6 +68,7 @@ def main():
     bottom_padding = 50
 
     for siren, image_path in zip(TEST_DATA, test_images):
+        print(f"--- Siren {siren} ---")
         image = Image.open(image_path)
         width, height = image.size
 
@@ -81,6 +82,7 @@ def main():
         table_boxes = results["boxes"].tolist()
 
         for table_idx, table_box in enumerate(table_boxes):
+            print(f"--- Table {table_idx} ---")
             xmin, ymin, xmax, ymax = table_box
             # Cropped image (only detected table)
             resized_image = image.crop(
