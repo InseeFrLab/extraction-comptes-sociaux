@@ -100,19 +100,30 @@ class DocumentQuerier:
             f"https://registre-national-entreprises.inpi.fr/api/bilans/{identifier}/download",
             auth=self.bearer_auth,
         )
+
         with tempfile.TemporaryDirectory() as tmpdirname:
-            with open(tmpdirname + "tmp.zip", "wb") as f:
-                f.write(r.content)
-            with zipfile.ZipFile(tmpdirname + "tmp.zip", "r") as zip_ref:
-                zip_ref.extractall(tmpdirname)
-            # Find extracted PDF file
-            pdf_files = glob.glob(tmpdirname + "/*.pdf")
-            if not pdf_files:
-                return ValueError("No PDF file in downloaded archive.")
+            # CASE 1: .zip file is downloaded
+            try:
+                with open(tmpdirname + "tmp.zip", "wb") as f:
+                    f.write(r.content)
+                with zipfile.ZipFile(tmpdirname + "tmp.zip", "r") as zip_ref:
+                    zip_ref.extractall(tmpdirname)
+                # Find extracted PDF file
+                pdf_files = glob.glob(tmpdirname + "/*.pdf")
+                path_to_copy = pdf_files[0]
+                if not pdf_files:
+                    return ValueError("No PDF file in downloaded archive.")
+            # CASE 2: .pdf file is downloaded
+            except Exception:
+                path_to_copy = tmpdirname + "tmp.pdf"
+                with open(path_to_copy, "wb") as f:
+                    f.write(r.content)
+                
+            # Save to `save_path`
             if s3:
-                fs.put(pdf_files[0], save_path)
+                fs.put(path_to_copy, save_path)
             else:
-                shutil.copyfile(pdf_files[0], save_path)
+                shutil.copyfile(path_to_copy, save_path)
 
     def list_documents(self, siren: str):
         """
