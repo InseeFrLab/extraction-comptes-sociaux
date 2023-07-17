@@ -35,10 +35,10 @@ setuptools.setup(
         "fasttext"
     ],
     packages=[
-        "src.page_selection",
-        "src.extraction",
-        "src.extraction.data",
-        "src.extraction.tablenet",
+        "extraction_core.page_selection",
+        "extraction_core.extraction",
+        "extraction_core.extraction.data",
+        "extraction_core.extraction.tablenet",
     ],
     python_requires=">=3.7",
     package_data={"extraction_core_comptes": ["data/*"]},
