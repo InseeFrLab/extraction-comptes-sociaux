@@ -59,16 +59,17 @@ class ColumnExtractor:
         cols_array = np.zeros_like(list(readjusted_column_masks.values())[0])
         for i, (idx, column) in enumerate(readjusted_column_masks.items()):
             cols_array += (i + 1) * column
+        
         # Plot post-treated masks
-        plt.rcParams["figure.figsize"] = (20, 10)
-        plt.plot()
-        plt.imshow(image.resize((896, 896)), interpolation="none")
-        plt.imshow(cols_array, interpolation="none", alpha=0.5)
-        plt.colorbar(orientation="vertical")
-        plt.savefig(
-            os.path.join(get_root_path(), "output/readj_column_masks.png")
-        )
-        plt.clf()
+        # plt.rcParams["figure.figsize"] = (20, 10)
+        # plt.plot()
+        # plt.imshow(image.resize((896, 896)), interpolation="none")
+        # plt.imshow(cols_array, interpolation="none", alpha=0.5)
+        # plt.colorbar(orientation="vertical")
+        # plt.savefig(
+        #     os.path.join(get_root_path(), "output/readj_column_masks.png")
+        # )
+        # plt.clf()
 
         for colname, column_mask in readjusted_column_masks.items():
             extractions.append(self.extract_column(column_mask, image))
@@ -206,11 +207,11 @@ class ColumnExtractor:
         cropped_image = crop[row1:row2, col1:col2]
 
         # Plot
-        plt.rcParams["figure.figsize"] = (20, 10)
-        plt.plot()
-        plt.imshow(cropped_image, interpolation="none")
-        plt.savefig(os.path.join(get_root_path(), "output/crop.png"))
-        plt.clf()
+        # plt.rcParams["figure.figsize"] = (20, 10)
+        # plt.plot()
+        # plt.imshow(cropped_image, interpolation="none")
+        # plt.savefig(os.path.join(get_root_path(), "output/crop.png"))
+        # plt.clf()
 
         ocr_string = image_to_string(
             Image.fromarray(cropped_image.astype(np.uint8)),

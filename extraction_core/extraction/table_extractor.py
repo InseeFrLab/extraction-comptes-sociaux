@@ -186,14 +186,14 @@ class TableExtractor:
             }
 
         # First plot
-        plt.rcParams["figure.figsize"] = (20, 10)
-        plt.plot()
-        plt.imshow(image.resize((896, 896)), interpolation="none")
-        plt.imshow(raw_column_mask, interpolation="none", alpha=0.5)
-        plt.savefig(
-            os.path.join(get_root_path(), "output/raw_column_masks.png")
-        )
-        plt.clf()
+        # plt.rcParams["figure.figsize"] = (20, 10)
+        # plt.plot()
+        # plt.imshow(image.resize((896, 896)), interpolation="none")
+        # plt.imshow(raw_column_mask, interpolation="none", alpha=0.5)
+        # plt.savefig(
+        #     os.path.join(get_root_path(), "output/raw_column_masks.png")
+        # )
+        # plt.clf()
 
         segmented_tables = self.process_tables(
             self.segment_table_mask(raw_table_mask)
@@ -209,15 +209,15 @@ class TableExtractor:
                 for i, (idx, column) in enumerate(segmented_columns.items()):
                     cols_array += column
                 # Plot post-treated masks
-                plt.rcParams["figure.figsize"] = (20, 10)
-                plt.plot()
-                plt.imshow(image.resize((896, 896)), interpolation="none")
-                plt.imshow(cols_array, interpolation="none", alpha=0.5)
-                plt.colorbar(orientation="vertical")
-                plt.savefig(
-                    os.path.join(get_root_path(), "output/column_masks.png")
-                )
-                plt.clf()
+                # plt.rcParams["figure.figsize"] = (20, 10)
+                # plt.plot()
+                # plt.imshow(image.resize((896, 896)), interpolation="none")
+                # plt.imshow(cols_array, interpolation="none", alpha=0.5)
+                # plt.colorbar(orientation="vertical")
+                # plt.savefig(
+                #     os.path.join(get_root_path(), "output/column_masks.png")
+                # )
+                # plt.clf()
 
                 if invert_dark_areas:
                     ocr_image = self.invert_dark_areas(image)
