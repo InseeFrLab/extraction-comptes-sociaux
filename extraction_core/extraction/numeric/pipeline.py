@@ -142,7 +142,7 @@ def pipeline(filename, table_extractor):
         filename (str): Nom du fichier pdf à traiter.
     """
     path = (
-        "/home/coder/work/comptes-sociaux-to-tableau-fp-csv/src/data/pdf_numerique/"
+        "/home/coder/work/comptes-sociaux-to-tableau-fp-csv/extraction_core/data/pdf_numerique/"
         + filename
     )
     print("Le fichier " + str(filename) + " est en train d'être traité.")
@@ -210,7 +210,7 @@ def pipeline(filename, table_extractor):
 
             csv_name = filename[:-3] + "csv"
             better_df.to_csv(
-                "/home/coder/work/comptes-sociaux-to-tableau-fp-csv/src/data/csv_table/"
+                "/home/coder/work/comptes-sociaux-to-tableau-fp-csv/extraction_core/data/csv_table/"
                 + csv_name,
                 index=False,
             )
@@ -224,7 +224,7 @@ if __name__ == "__main__":
 
     # Récuperation des noms des pdf sous forme d'une liste de chaîne de caractère
     list_file = os.listdir(
-        "/home/coder/work/comptes-sociaux-to-tableau-fp-csv/src/data/pdf_numerique"
+        "/home/coder/work/comptes-sociaux-to-tableau-fp-csv/extraction_core/data/pdf_numerique"
     )
 
     table_extractor = setup_extractor()

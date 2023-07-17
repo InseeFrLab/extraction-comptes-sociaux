@@ -133,7 +133,7 @@ def find_table(pdf_path, table_extractor):
     doc = fitz.open(pdf_file)
     page = doc.load_page(0)  # number of page
     pix = page.get_pixmap()
-    image_path = "/home/coder/work/comptes-sociaux-to-tableau-fp-csv/src/numeric/image.png"
+    image_path = "/home/coder/work/comptes-sociaux-to-tableau-fp-csv/extraction_core/numeric/image.png"
     pix.save(image_path)
 
     image = Image.open(image_path)
