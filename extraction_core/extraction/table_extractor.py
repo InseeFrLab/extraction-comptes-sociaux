@@ -60,6 +60,7 @@ class TableExtractor:
         column_extractor: ColumnExtractor = ColumnExtractor(),
         column_assembler: ColumnAssembler = ColumnAssembler(),
         weights_path: str = "./weights.ckpt",
+        config: str = "--oem 1 --psm 4"
     ):
         """
         Constructor for the TableExtractor class.
@@ -81,11 +82,10 @@ class TableExtractor:
         self.column_closing_width = column_closing_width
         self.column_threshold = column_threshold
 
-        self.column_extractor = column_extractor
+        self.column_extractor = ColumnExtractor(config=config)
         self.column_assembler = column_assembler
 
         self.model = model
-        print(model)
         self.model.eval()
         self.model.requires_grad_(False)
 
@@ -103,6 +103,7 @@ class TableExtractor:
         column_assembler: ColumnAssembler = ColumnAssembler(),
         on_s3=True,
         weights_path: str = "./weights.ckpt",
+        config: str = "--oem 1 --psm 4"
     ) -> TableExtractor:
         """
         Constructor for the TableExtractor class.
@@ -136,6 +137,7 @@ class TableExtractor:
             column_extractor,
             column_assembler,
             weights_path,
+            config=config
         )
 
     def get_raw_masks(self, image: Image) -> Tuple[np.array, np.array]:
