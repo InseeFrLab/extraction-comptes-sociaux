@@ -56,7 +56,7 @@ class TableCleaner:
         similarities = []
         fuzzy_matches = []
 
-        for name, value in header_df.iteritems():
+        for name, value in header_df.items():
             value_cleaned = value.dropna()
             content = " ".join(value_cleaned)
             similarities.append(

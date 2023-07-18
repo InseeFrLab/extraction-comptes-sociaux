@@ -27,7 +27,8 @@ def main(args):
     # )
     # table_extractor = TableExtractor(model=clf)
     table_extractor = TableExtractor.from_checkpoint(
-        "projet-extraction-tableaux/logs/TableNetModule/version_00/checkpoints/marmot_model.ckpt"
+        "projet-extraction-tableaux/logs/TableNetModule/version_00/checkpoints/marmot_model.ckpt",
+        config="--oem 3 --psm 11"
     )
 
     TEST_DATA = [
