@@ -1,7 +1,7 @@
 """
 Code to clean masks.
 """
-from typing import List
+from typing import List, Dict
 import numpy as np
 from skimage.filters import threshold_otsu
 from skimage.segmentation import clear_border
@@ -113,7 +113,7 @@ class ColumnMaskCleaner:
         self.min_surface_ratio_to_table = min_surface_ratio_to_table
         self.min_height_ratio_to_table = min_height_ratio_to_table
 
-    def clean(self, mask: np.array) -> np.array:
+    def clean(self, mask: np.array, single_table_masks: List[np.array]) -> List[Dict]:
         """
 
         Args:
@@ -122,6 +122,14 @@ class ColumnMaskCleaner:
         Returns:
             np.array: _description_
         """
+        segmented_columns_list = []
+        for single_table_mask in single_table_masks:
+            segmented_column_mask = self.segment_column_mask(mask, single_table_mask)
+            segmented_columns = self.process_columns(
+                segmented_column_mask
+            )
+            segmented_columns_list.append(segmented_columns)
+        return segmented_columns_list
 
     def segment_column_mask(
         self, column_mask: np.array, single_table_mask: np.array
@@ -160,26 +168,26 @@ class ColumnMaskCleaner:
         return label(reconnected_sep_cleared)
 
     def process_columns(
-            self, segmented_columns: np.array
-        ) -> Dict[int, np.array]:
-            """
-            Takes a segmented column mask as input and return a dictionary
-            of post-processed column masks.
-            TODO: return type to adjust ?
+        self, segmented_columns: np.array
+    ) -> Dict[int, np.array]:
+        """
+        Takes a segmented column mask as input and return a dictionary
+        of post-processed column masks.
+        TODO: return type to adjust ?
 
-            Args:
-                segmented_columns (np.array): probabilities mask output
-                    of the model.
-            """
-            table_width = np.where(segmented_columns > 0, 1, 0).sum(axis=1).max()
-            table_height = np.where(segmented_columns > 0, 1, 0).sum(axis=0).max()
-            cols = {}
+        Args:
+            segmented_columns (np.array): probabilities mask output
+                of the model.
+        """
+        table_width = np.where(segmented_columns > 0, 1, 0).sum(axis=1).max()
+        table_height = np.where(segmented_columns > 0, 1, 0).sum(axis=0).max()
+        cols = {}
 
-            for j in np.unique(segmented_columns)[1:]:
-                column = np.where(segmented_columns == j, 1, 0)
-                column = column.astype(int)
-                if column.sum() > table_width * table_height * self.min_surface_ratio_to_table:
-                    position = regionprops(column)[0].centroid[1]
-                    cols[position] = column
+        for j in np.unique(segmented_columns)[1:]:
+            column = np.where(segmented_columns == j, 1, 0)
+            column = column.astype(int)
+            if column.sum() > table_width * table_height * self.min_surface_ratio_to_table:
+                position = regionprops(column)[0].centroid[1]
+                cols[position] = column
 
-            cols = OrderedDict(sorted(cols.items()))
+        cols = OrderedDict(sorted(cols.items()))
