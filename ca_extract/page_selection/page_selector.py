@@ -2,7 +2,15 @@
 Page selector.
 """
 from PIL import Image
-from .utils import clean_page_content, extract_document_content, load_pdf
+import fitz
+from .utils import (
+    clean_page_content,
+    extract_document_content,
+    load_pdf,
+    extract_document_content_fitz,
+    extract_document_content_ocr,
+    is_scan
+)
 import mlflow
 
 
@@ -86,7 +94,47 @@ class PageSelector:
         for idx, prediction in enumerate(predictions):
             if str(prediction) == "0":
                 std_probas[idx] = 1 - probas[idx]
-            
+
+        if std_probas.max() < self.threshold:
+            raise ValueError(
+                "Pas de tableau filiales et participations détecté."
+            )
+        else:
+            return std_probas.idxmax()
+
+    def get_page_number_from_bytes(self, PDFbytes) -> int:
+        """
+        Returns the number of the page containing the fp table.
+
+        Args:
+            bytes (?): PDF bytes.
+
+        Returns:
+            int: Number of page with the "filiales et participations" table.
+        """
+        doc = fitz.open(stream=PDFbytes)
+        if is_scan(doc):
+            page_list = extract_document_content_ocr(
+                doc,
+                resolution=self.resolution,
+                parallel=self.parallel,
+                maxthreads=self.maxthreads,
+            )
+        else:
+            page_list = extract_document_content_fitz(doc)
+
+        clean_page_list = []
+        for page in page_list:
+            clean_page_list.append(clean_page_content(page))
+
+        model_output = self.clf.predict(clean_page_list)
+        predictions = model_output["predictions"]
+        probas = model_output["probas"]
+        std_probas = probas.copy()
+        for idx, prediction in enumerate(predictions):
+            if str(prediction) == "0":
+                std_probas[idx] = 1 - probas[idx]
+
         if std_probas.max() < self.threshold:
             raise ValueError(
                 "Pas de tableau filiales et participations détecté."
