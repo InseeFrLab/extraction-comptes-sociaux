@@ -36,13 +36,25 @@ class Detector(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def detect(self, pdf_path: str, s3: bool) -> List:
+    def detect_from_path(self, pdf_path: str, s3: bool) -> List:
         """
         Run inference on a pdf from a path.
 
         Args:
             weights_path (str): Path to pdf.
             s3 (bool): Is the pdf on https://minio.lab.sspcloud.fr ?
+        Returns:
+            List: List of cropped table images.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def detect(self, document: fitz.Document) -> List:
+        """
+        Run inference on a pdf from a path.
+
+        Args:
+            document (fitz.Document): Document.
         Returns:
             List: List of cropped table images.
         """
