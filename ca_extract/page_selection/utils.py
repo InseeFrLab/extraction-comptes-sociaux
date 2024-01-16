@@ -29,6 +29,34 @@ fs = s3fs.S3FileSystem(
 
 
 def extract_document_content(
+    doc: fitz.Document,
+    resolution: int = 200,
+    parallel: bool = True,
+    maxthreads: int = 10,
+) -> List[pd.DataFrame]:
+    """
+    From a path to a pdf file, extract content as a list of
+    strings each containing the text in a page.
+
+    Args:
+        pdf_path (str): Path to PDF file.
+        s3 (bool): True if file is on s3.
+        resolution (int): Resolution.
+        parallel (bool): True if OCR should be in parallel in multiple threads.
+        maxthreads (int): Max. number of threads for parallel processing.
+    """
+    if is_scan(doc):
+        return extract_document_content_ocr(
+            doc,
+            resolution=resolution,
+            parallel=parallel,
+            maxthreads=maxthreads,
+        )
+    else:
+        return extract_document_content_fitz(doc)
+
+
+def extract_content_from_file(
     pdf_path: str,
     s3: bool = True,
     resolution: int = 200,
@@ -47,16 +75,12 @@ def extract_document_content(
         maxthreads (int): Max. number of threads for parallel processing.
     """
     doc = load_pdf(pdf_path, s3)
-
-    if is_scan(doc):
-        return extract_document_content_ocr(
-            doc,
-            resolution=resolution,
-            parallel=parallel,
-            maxthreads=maxthreads,
-        )
-    else:
-        return extract_document_content_fitz(doc)
+    return extract_document_content(
+        doc,
+        resolution,
+        parallel,
+        maxthreads
+    )
 
 
 def is_scan(doc: fitz.Document) -> bool:

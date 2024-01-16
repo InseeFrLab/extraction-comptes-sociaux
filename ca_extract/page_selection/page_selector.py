@@ -5,11 +5,9 @@ from PIL import Image
 import fitz
 from .utils import (
     clean_page_content,
+    extract_content_from_file,
     extract_document_content,
     load_pdf,
-    extract_document_content_fitz,
-    extract_document_content_ocr,
-    is_scan
 )
 import mlflow
 
@@ -45,7 +43,7 @@ class PageSelector:
         self.parallel = parallel
         self.maxthreads = maxthreads
 
-    def get_page(
+    def get_page_from_file(
         self,
         pdf_path: str,
         s3: bool = True,
@@ -60,7 +58,7 @@ class PageSelector:
             s3 (bool): True if file is on s3.
             dpi (int): Resolution of picture output.
         """
-        page_number = self.get_page_number(pdf_path, s3)
+        page_number = self.get_page_number_from_file(pdf_path, s3)
 
         doc = load_pdf(pdf_path, s3)
         pix = doc[page_number].get_pixmap(dpi=dpi)
@@ -68,7 +66,7 @@ class PageSelector:
         image = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
         return image
 
-    def get_page_number(self, pdf_path: str, s3: bool = True) -> int:
+    def get_page_number_from_file(self, pdf_path: str, s3: bool = True) -> int:
         """
         Returns the number of the page containing the fp table.
 
@@ -79,7 +77,7 @@ class PageSelector:
         Returns:
             int: Number of page with the "filiales et participations" table.
         """
-        page_list = extract_document_content(
+        page_list = extract_content_from_file(
             pdf_path, s3, self.resolution, self.parallel, self.maxthreads
         )
 
@@ -102,7 +100,7 @@ class PageSelector:
         else:
             return std_probas.idxmax()
 
-    def get_page_number_from_bytes(self, PDFbytes) -> int:
+    def get_page_number(self, document: fitz.Document) -> int:
         """
         Returns the number of the page containing the fp table.
 
@@ -112,16 +110,12 @@ class PageSelector:
         Returns:
             int: Number of page with the "filiales et participations" table.
         """
-        doc = fitz.open(stream=PDFbytes)
-        if is_scan(doc):
-            page_list = extract_document_content_ocr(
-                doc,
-                resolution=self.resolution,
-                parallel=self.parallel,
-                maxthreads=self.maxthreads,
-            )
-        else:
-            page_list = extract_document_content_fitz(doc)
+        page_list = extract_document_content(
+            document,
+            self.resolution,
+            self.parallel,
+            self.maxthreads
+        )
 
         clean_page_list = []
         for page in page_list:
