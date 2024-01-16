@@ -10,6 +10,7 @@ from transformers import AutoModelForObjectDetection
 from .utils import pad_image, iob
 import torch
 from utils import load_pdf
+import fitz
 
 
 class Detector(abc.ABC):
@@ -199,20 +200,17 @@ class TableTransformerDetector(Detector):
 
         return table_crops
 
-    def detect(self, pdf_path: str, s3: bool) -> List:
+    def detect(self, document: fitz.Document) -> List:
         """
         Run inference on a pdf from a path.
 
         Args:
-            weights_path (str): Path to pdf.
-            s3 (bool): Is the pdf on https://minio.lab.sspcloud.fr ?
+            document (fitz.Document): Document.
         Returns:
             List: List of cropped table images.
         """
-        # Read PDF page
-        doc = load_pdf(pdf_path, s3)
         all_crops = []
-        for page_idx, page in enumerate(doc):
+        for page_idx, page in enumerate(document):
             pix = page.get_pixmap(dpi=300)
             mode = "RGBA" if pix.alpha else "RGB"
             image = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
@@ -245,3 +243,17 @@ class TableTransformerDetector(Detector):
             )
             all_crops += [crop["image"].convert("RGB") for crop in page_crops]
         return all_crops
+
+    def detect_from_path(self, pdf_path: str, s3: bool) -> List:
+        """
+        Run inference on a pdf from a path.
+
+        Args:
+            weights_path (str): Path to pdf.
+            s3 (bool): Is the pdf on https://minio.lab.sspcloud.fr ?
+        Returns:
+            List: List of cropped table images.
+        """
+        # Read PDF page
+        document = load_pdf(pdf_path, s3)
+        return self.detect(document)
