@@ -7,9 +7,8 @@ import abc
 from .transforms import MaxResize
 from torchvision import transforms
 from transformers import AutoModelForObjectDetection
-from .utils import pad_image, iob
+from .utils import pad_image, iob, load_pdf
 import torch
-from utils import load_pdf
 import fitz
 
 
