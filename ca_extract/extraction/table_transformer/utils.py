@@ -5,6 +5,16 @@ from typing import List
 from PIL import Image, ImageDraw, ImageOps
 from matplotlib import pyplot as plt
 from fitz import Rect
+import fitz
+import os
+import s3fs
+
+
+fs = s3fs.S3FileSystem(
+    client_kwargs={"endpoint_url": "https://" + os.environ["AWS_S3_ENDPOINT"]},
+    key=os.environ["AWS_ACCESS_KEY_ID"],
+    secret=os.environ["AWS_SECRET_ACCESS_KEY"],
+)
 
 
 def get_plot(image: Image, boxes: List[List[int]]):
@@ -63,3 +73,22 @@ def iob(bbox1, bbox2):
         return intersection.get_area() / bbox1_area
 
     return 0
+
+
+def load_pdf(pdf_path: str, s3: bool = True) -> fitz.Document:
+    """
+    Load pdf file from path.
+
+    Args:
+        pdf_path (str): Path to PDF file.
+        s3 (bool): True if file is on s3.
+    """
+    if s3:
+        # TODO : clean up
+        fs.get(pdf_path, "tmp_pdf.pdf")
+        doc = fitz.open("tmp_pdf.pdf")
+        os.remove("tmp_pdf.pdf")
+    else:
+        doc = fitz.open(pdf_path)
+
+    return doc
