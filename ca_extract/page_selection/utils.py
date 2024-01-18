@@ -39,8 +39,7 @@ def extract_document_content(
     strings each containing the text in a page.
 
     Args:
-        pdf_path (str): Path to PDF file.
-        s3 (bool): True if file is on s3.
+        doc (fitz.Document): PDF document.
         resolution (int): Resolution.
         parallel (bool): True if OCR should be in parallel in multiple threads.
         maxthreads (int): Max. number of threads for parallel processing.

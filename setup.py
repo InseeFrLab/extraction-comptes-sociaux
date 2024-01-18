@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="extraction_core_comptes",
+    name="ca_extract",
     version="0.0.1",
     author="Tom Seimandi",
     description="Package pour l'extraction de tableau des comptes sociaux",
@@ -42,5 +42,5 @@ setuptools.setup(
         "ca_extract.extraction.table_transformer",
     ],
     python_requires=">=3.7",
-    package_data={"extraction_core_comptes": ["data/*"]},
+    package_data={"ca_extract": ["data/*"]},
 )

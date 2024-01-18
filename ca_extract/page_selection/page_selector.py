@@ -105,7 +105,7 @@ class PageSelector:
         Returns the number of the page containing the fp table.
 
         Args:
-            bytes (?): PDF bytes.
+            document (fitz.Document): PDF document.
 
         Returns:
             int: Number of page with the "filiales et participations" table.
