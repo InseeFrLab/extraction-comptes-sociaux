@@ -32,7 +32,9 @@ setuptools.setup(
         "Pillow",
         "pymupdf",
         "unidecode",
-        "fasttext"
+        "fasttext",
+        "transformers",
+        "python-doctr",
     ],
     packages=[
         "ca_extract.page_selection",
