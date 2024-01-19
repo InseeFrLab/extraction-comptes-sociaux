@@ -16,3 +16,5 @@ nltk
 unidecode
 pre-commit
 fasttext
+transformers
+python-doctr
